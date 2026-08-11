@@ -318,6 +318,17 @@ function calcularEncaje(lead){
   if(lead.pais){ pts+=10; razones.push("Ubicación geográfica registrada"); }
   return {pts, razones};
 }
+
+/* ---------------------------- CAPTACIÓN GOOGLE BUSINESS / RESEÑAS ---------------------------- */
+/* Estructura lista para conectar Google Places API más adelante; por ahora se captura manualmente. */
+const FUENTES_GOOGLE = ["Google Business (sin sitio web)","Reseñas de Google","Google Maps — búsqueda manual"];
+
+/* ---------------------------- ESTADO DEL AGENTE IA (producto entregado al cliente) ---------------------------- */
+const ESTADOS_AGENTE_IA = ["No implementado","Setup en curso","En prueba con el cliente","Activo 24/7","Pausado"];
+function estadoAgenteBadge(estado){
+  const map = {"No implementado":"perdido","Setup en curso":"alta","En prueba con el cliente":"media","Activo 24/7":"convertido","Pausado":"critica"};
+  return map[estado] || "nuevo";
+}
 const PRODUCTOS_SEED = [
   {id:"p1", nombre:"Plan Corporativo Anual", categoria:"Software", precio:4200},
   {id:"p2", nombre:"Consultoría de Implementación", categoria:"Servicio", precio:1800},
@@ -715,6 +726,7 @@ function viewLeads(){
     </div>
     <div style="display:flex;gap:8px;">
       <button class="btn" id="btnImportar">Importar</button>
+      <button class="btn" id="btnCaptarGoogle">📍 Captar desde Google</button>
       <button class="btn btn-primary" id="btnNuevoLead">+ Nuevo prospecto</button>
     </div>
   </div>
@@ -744,6 +756,37 @@ function viewLeads(){
       </tbody>
     </table>
     </div>
+  </div>`;
+}
+
+/* --------------------------- CAPTACIÓN MANUAL DESDE GOOGLE BUSINESS / RESEÑAS --------------------------- */
+/* Formulario para registrar negocios encontrados en Google Maps/reseñas que aún no tienen sitio web.
+   Los campos coinciden 1 a 1 con lo que expondría Google Places API, para poder automatizar esta
+   captura más adelante sin cambiar el modelo de datos. */
+function googleCaptureForm(){
+  return `
+  <div class="modal-head"><h3>📍 Captar negocio desde Google</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">
+      Registra negocios encontrados en Google Maps, su ficha de Google Business o sus reseñas — ideal para
+      negocios que aún no tienen sitio web propio. Se crean como prospecto nuevo con fuente "Google Business".
+    </p>
+    <div class="form-grid">
+      <div class="field"><label>Nombre del negocio</label><input id="gc_empresa" placeholder="Ej: Restaurante La Marina"></div>
+      <div class="field"><label>Persona de contacto (si se conoce)</label><input id="gc_contacto" placeholder="Ej: Encargado / Gerente"></div>
+      <div class="field"><label>Teléfono (de la ficha de Google)</label><input id="gc_telefono"></div>
+      <div class="field"><label>País</label><select id="gc_pais">${PAISES_TZ.map(p=>`<option value="${p.pais}">${p.flag} ${p.pais}</option>`).join("")}</select></div>
+      <div class="field"><label>Nicho de negocio</label><select id="gc_nicho">${NICHOS.map(n=>`<option>${n}</option>`).join("")}</select></div>
+      <div class="field"><label>Fuente de captación</label><select id="gc_fuente">${FUENTES_GOOGLE.map(f=>`<option>${f}</option>`).join("")}</select></div>
+      <div class="field"><label>Calificación en Google (0–5)</label><input type="number" id="gc_rating" min="0" max="5" step="0.1" placeholder="Ej: 4.3"></div>
+      <div class="field"><label>¿Tiene sitio web propio?</label><select id="gc_tieneweb"><option value="no">No — oportunidad de venta</option><option value="si">Sí</option></select></div>
+      <div class="field" style="grid-column:1/-1;"><label>Enlace a la ficha de Google Maps / Business</label><input id="gc_link" placeholder="https://maps.google.com/..."></div>
+      <div class="field" style="grid-column:1/-1;"><label>Falencia detectada en reseñas (ej: "clientes se quejan de no contestar rápido")</label><textarea id="gc_falencia" rows="2"></textarea></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="saveGoogleCapture">Crear prospecto</button>
   </div>`;
 }
 
@@ -789,7 +832,11 @@ function viewMapaGlobal(){
   <div class="card card-pad" style="margin-bottom:14px;">
     <b>Mapa mundial de prospectos</b>
     <div style="color:var(--muted);font-size:12.5px;margin-top:2px;">
-      Ubicación, hora local exacta y encaje comercial de cada prospecto. Referencia horaria propia: Panamá (UTC-5).
+      Ubicación, hora local exacta y encaje comercial de cada negocio. Referencia horaria propia: Panamá (UTC-5).
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted);">
+      <span>🍽️ Restaurante</span><span>🏨 Hotel</span><span>🏥 Clínica</span><span>🏢 Otro</span>
+      <span style="margin-left:auto;">🔴 Encaje alto (≥70) · 🟠 Medio (40–69) · 🔵 Bajo (&lt;40)</span>
     </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden;">
@@ -821,48 +868,84 @@ function viewMapaGlobal(){
   </div>`;
 }
 
+const NICHO_ICONO = {"Restaurante":"🍽️","Hotel":"🏨","Clínica":"🏥","Otro":"🏢"};
+
 function initMapaGlobal(){
   const el = document.getElementById("mapaMundi");
   if(!el || typeof L === "undefined") return;
-  const map = L.map("mapaMundi", {worldCopyJump:true}).setView([15, -30], 2);
+  const map = L.map("mapaMundi", {worldCopyJump:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
     maxZoom: 18
   }).addTo(map);
 
-  // Agrupar prospectos por país para no solapar marcadores
   const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais));
+
+  if(!conPais.length){
+    map.setView([20,0], 2);
+    L.control.attribution({prefix:false}).addTo(map);
+    return;
+  }
+
+  // Agrupar por país solo para el color/tamaño del halo; cada negocio recibe su propio marcador
   const porPais = {};
   conPais.forEach(l=>{ (porPais[l.pais] = porPais[l.pais]||[]).push(l); });
+
+  const bounds = [];
+  const markers = [];
 
   Object.keys(porPais).forEach(paisNombre=>{
     const p = paisInfo(paisNombre);
     const leadsPais = porPais[paisNombre];
-    const encajePromedio = Math.round(leadsPais.reduce((a,l)=>a+calcularEncaje(l).pts,0)/leadsPais.length);
-    const color = encajePromedio>=70? "#C6432A" : encajePromedio>=40? "#B9791A" : "#4C5FD5";
-    const marker = L.circleMarker([p.lat,p.lng], {
-      radius: 9 + Math.min(leadsPais.length*2, 12),
-      fillColor: color, color:"#fff", weight:2, fillOpacity:.85
-    }).addTo(map);
 
-    const popupHtml = `
-      <div style="font-family:'Inter',sans-serif;min-width:220px;">
-        <b>${p.flag} ${paisNombre}</b> · <span class="mono" data-tz="${p.tz}" id="tzclock-${paisNombre.replace(/\s/g,'')}">${horaLocal(paisNombre)}</span>
-        <div style="font-size:11.5px;color:#6B7080;margin:4px 0 8px;">${leadsPais.length} prospecto(s) · encaje promedio ${encajePromedio} pts</div>
-        ${leadsPais.map(l=>{
-          const enc = calcularEncaje(l);
-          return `
-          <div style="border-top:1px solid #E4E6EE;padding:6px 0;">
-            <b>${l.nombre} ${l.apellido}</b> — ${l.empresaNombre||'Sin empresa'}<br>
+    // Distribuir los negocios de un mismo país en pequeño círculo alrededor del punto central
+    leadsPais.forEach((l, i)=>{
+      const angle = (2*Math.PI/Math.max(leadsPais.length,1)) * i;
+      const jitter = leadsPais.length>1 ? 0.6 : 0;
+      const lat = p.lat + Math.sin(angle)*jitter;
+      const lng = p.lng + Math.cos(angle)*jitter;
+      const enc = calcularEncaje(l);
+      const color = enc.pts>=70? "#C6432A" : enc.pts>=40? "#B9791A" : "#4C5FD5";
+      const icono = NICHO_ICONO[l.nicho] || "🏢";
+
+      const divIcon = L.divIcon({
+        className: "",
+        html: `<div style="background:${color};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">
+                 <span style="transform:rotate(45deg);font-size:16px;">${icono}</span>
+               </div>`,
+        iconSize: [34,34], iconAnchor: [17,34], popupAnchor:[0,-32]
+      });
+      const marker = L.marker([lat,lng], {icon: divIcon}).addTo(map);
+      bounds.push([lat,lng]);
+      markers.push(marker);
+
+      marker.bindTooltip(`<b>${l.empresaNombre||l.nombre+' '+l.apellido}</b> · ${l.nicho||'—'}`, {direction:"top", offset:[0,-30]});
+
+      const popupHtml = `
+        <div style="font-family:'Inter',sans-serif;min-width:230px;">
+          <b>${icono} ${l.empresaNombre||'Sin nombre de empresa'}</b>
+          <div style="font-size:11.5px;color:#6B7080;margin:2px 0 8px;">${p.flag} ${paisNombre} · <span class="mono" data-tz="${p.tz}">${horaLocal(paisNombre)}</span></div>
+          <div style="border-top:1px solid #E4E6EE;padding-top:6px;">
+            <b>${l.nombre} ${l.apellido}</b><br>
             <span style="font-size:11.5px;">${l.nicho||'—'} · ${l.colaboradores||0} colaboradores · ${l.telefono||'sin teléfono'}</span><br>
             <span style="font-size:11.5px;">Presupuesto: ${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'✓ en rango':'⚠ fuera de rango'}</span><br>
             ${l.falencia? `<span style="font-size:11.5px;color:#B9791A;">Falencia: ${l.falencia}</span><br>`:''}
             <span style="font-size:11.5px;font-weight:700;">Encaje: ${enc.pts} pts</span>
-          </div>`;
-        }).join("")}
-      </div>`;
-    marker.bindPopup(popupHtml, {maxWidth:280});
+          </div>
+        </div>`;
+      marker.bindPopup(popupHtml, {maxWidth:280});
+    });
   });
+
+  // Encuadrar el mapa automáticamente para mostrar todos los negocios cargados
+  if(bounds.length===1){
+    map.setView(bounds[0], 5);
+  }else{
+    map.fitBounds(bounds, {padding:[40,40], maxZoom:6});
+  }
+
+  // Abrir automáticamente el primer negocio para que el mapa no se vea "vacío"
+  if(markers.length) markers[0].openPopup();
 
   // Reloj en vivo dentro de los popups abiertos
   setInterval(()=>{
@@ -1107,10 +1190,11 @@ function viewOportunidades(){
   <div class="card">
     <div class="table-wrap">
     <table>
-      <thead><tr><th>Oportunidad</th><th>Empresa</th><th>Vendedor</th><th>Etapa</th><th>Valor</th><th>Prob.</th><th>Días en etapa</th></tr></thead>
+      <thead><tr><th>Oportunidad</th><th>Empresa</th><th>Vendedor</th><th>Etapa</th><th>Valor</th><th>Prob.</th><th>Días en etapa</th><th>Agente IA</th></tr></thead>
       <tbody>
         ${rows.map(o=>{
           const dias = daysAgo(o.diasEtapaDesde);
+          const estIA = o.estadoAgenteIA || "No implementado";
           return `
           <tr class="rowlink" data-op-row="${o.id}">
             <td data-label="Oportunidad"><b>${o.nombre}</b></td>
@@ -1120,6 +1204,7 @@ function viewOportunidades(){
             <td data-label="Valor" class="mono">${fmtMoney(o.valor)}</td>
             <td data-label="Prob.">${o.probabilidad}%</td>
             <td data-label="Días en etapa">${dias>5? `<span style="color:var(--red);font-weight:600;">${dias}d</span>` : dias+'d'}</td>
+            <td data-label="Agente IA"><span class="badge badge-${estadoAgenteBadge(estIA)}">${estIA}</span></td>
           </tr>`;
         }).join("")}
       </tbody>
@@ -1135,7 +1220,7 @@ function viewOportunidades(){
    FORMULARIO — OPORTUNIDAD (nueva o edición)
 ============================================================================ */
 function oportunidadForm(op){
-  const o = op || {nombre:"", empresaId:"", vendedorId:VENDEDORES[0].id, valor:"", etapa:"nuevo", probabilidad:20};
+  const o = op || {nombre:"", empresaId:"", vendedorId:VENDEDORES[0].id, valor:"", etapa:"nuevo", probabilidad:20, estadoAgenteIA:ESTADOS_AGENTE_IA[0]};
   return `
   <div class="modal-head"><h3>${op? "Editar oportunidad":"Nueva oportunidad"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -1144,8 +1229,9 @@ function oportunidadForm(op){
       <div class="field"><label>Empresa</label><select id="op_empresa"><option value="">— Sin empresa —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===o.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Vendedor asignado</label><select id="op_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===o.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Valor estimado ($)</label><input type="number" id="op_valor" value="${o.valor}"></div>
-      <div class="field"><label>Etapa</label><select id="op_etapa">${ETAPAS.map(et=>`<option value="${et}" ${et===o.etapa?'selected':''}>${ETAPA_LABEL[et]}</option>`).join("")}</select></div>
+      <div class="field"><label>Etapa comercial</label><select id="op_etapa">${ETAPAS.map(et=>`<option value="${et}" ${et===o.etapa?'selected':''}>${ETAPA_LABEL[et]}</option>`).join("")}</select></div>
       <div class="field"><label>Probabilidad de cierre (%)</label><input type="number" id="op_prob" min="0" max="100" value="${o.probabilidad}"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Estado del agente de IA (producto entregado)</label><select id="op_estado_ia">${ESTADOS_AGENTE_IA.map(s=>`<option ${s===o.estadoAgenteIA?'selected':''}>${s}</option>`).join("")}</select></div>
     </div>
   </div>
   <div class="modal-foot">
@@ -1179,6 +1265,7 @@ function bindViewEvents(){
     document.getElementById("fEstado").addEventListener("change", e=>{ leadFilters.estado=e.target.value; viewLeadsUpdate(); });
     document.getElementById("fPrioridad").addEventListener("change", e=>{ leadFilters.prioridad=e.target.value; viewLeadsUpdate(); });
     document.getElementById("btnNuevoLead").addEventListener("click", ()=> openModal(leadForm()));
+    document.getElementById("btnCaptarGoogle").addEventListener("click", ()=> openModal(googleCaptureForm()));
     document.getElementById("btnImportar").addEventListener("click", ()=> openModal(`
       <div class="modal-head"><h3>Importar prospectos</h3><button class="close-x" data-close>✕</button></div>
       <div class="modal-body">
@@ -1284,6 +1371,44 @@ function bindViewEvents(){
 function bindModalEvents(){
   document.querySelectorAll("#modalBox [data-close]").forEach(b=> b.addEventListener("click", closeModal));
 
+  // Captación manual desde Google Business / reseñas / sin sitio web
+  const saveGoogleBtn = document.getElementById("saveGoogleCapture");
+  if(saveGoogleBtn){
+    saveGoogleBtn.addEventListener("click", ()=>{
+      const empresa = document.getElementById("gc_empresa").value.trim();
+      if(!empresa){ toast("El nombre del negocio es obligatorio", true); return; }
+      const nuevo = {
+        id: uid(),
+        nombre: document.getElementById("gc_contacto").value || empresa,
+        apellido: "",
+        empresaNombre: empresa,
+        cargo: "",
+        email: "",
+        telefono: document.getElementById("gc_telefono").value,
+        pais: document.getElementById("gc_pais").value,
+        colaboradores: 0,
+        nicho: document.getElementById("gc_nicho").value,
+        falencia: document.getElementById("gc_falencia").value,
+        fuente: document.getElementById("gc_fuente").value,
+        vendedorId: VENDEDORES[0].id,
+        productoInteres: "",
+        presupuesto: 0,
+        prioridad: "media",
+        estado: "nuevo",
+        puntuacion: 0,
+        fechaIngreso: todayISO(),
+        googleRating: Number(document.getElementById("gc_rating").value)||null,
+        tieneSitioWeb: document.getElementById("gc_tieneweb").value==="si",
+        googleLink: document.getElementById("gc_link").value,
+      };
+      nuevo.puntosEncaje = calcularEncaje(nuevo).pts;
+      DB.leads.unshift(nuevo);
+      save();
+      toast(`${empresa} capturado desde Google`);
+      closeModal(); renderView();
+    });
+  }
+
   // Guardar prospecto (nuevo o edición)
   const saveLeadBtn = document.getElementById("saveLead");
   if(saveLeadBtn){
@@ -1366,6 +1491,7 @@ function bindModalEvents(){
         valor: Number(document.getElementById("op_valor").value)||0,
         etapa: document.getElementById("op_etapa").value,
         probabilidad: Number(document.getElementById("op_prob").value)||0,
+        estadoAgenteIA: document.getElementById("op_estado_ia").value,
       };
       if(id){
         const op = DB.oportunidades.find(o=>o.id===id);
