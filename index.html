@@ -262,11 +262,6 @@ function tareaVencida(a){ return a.estado==="pendiente" && new Date(a.fecha).get
 function fmtMoney(n){ return "$"+Number(n||0).toLocaleString("es-PA",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso); return d.toLocaleDateString("es-PA",{day:"2-digit",month:"short"}); }
 
-const VENDEDORES = [
-  {id:"v1", nombre:"Julieta Ríos"},
-  {id:"v2", nombre:"Marco Ábrego"},
-  {id:"v3", nombre:"Diana Cede\u00f1o"},
-];
 const FUENTES = ["Referido","Google Ads","Meta Ads","Sitio web","Feria comercial","Llamada en frío"];
 
 /* ---------------------------- PAÍSES / HUSOS HORARIOS ---------------------------- */
@@ -346,47 +341,15 @@ const MOTIVOS_DESCARTE = [
   "Otro",
 ];
 function seedData(){
-  const empresas = [
-    {id:"e1", nombre:"Ferretería del Istmo", industria:"Retail", pais:"Panamá", ciudad:"Ciudad de Panamá"},
-    {id:"e2", nombre:"Grupo Andino Textil", industria:"Manufactura", pais:"Panamá", ciudad:"Colón"},
-    {id:"e3", nombre:"Clínica San Rafael", industria:"Salud", pais:"Panamá", ciudad:"David"},
-  ];
-  const contactos = [
-    {id:"c1", empresaId:"e1", nombre:"Rodrigo", apellido:"Paz", cargo:"Gerente de Compras", email:"rpaz@ferreisto.com", telefono:"6600-1122", principal:true},
-    {id:"c2", empresaId:"e2", nombre:"Marlene", apellido:"Ju", cargo:"Directora Financiera", email:"mju@andinotextil.com", telefono:"6611-4433", principal:true},
-    {id:"c3", empresaId:"e3", nombre:"Dr. Iván", apellido:"Solís", cargo:"Administrador", email:"isolis@sanrafael.com", telefono:"6622-9988", principal:true},
-  ];
-  const now = Date.now();
-  const iso = (daysBack)=> new Date(now - daysBack*86400000).toISOString();
-  const leads = [
-    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Restaurante El Bistró",cargo:"Compradora",email:"camila@tboquete.com",telefono:"+34 611 220 330",fuente:"Google Ads",productoInteres:"Agente IA WhatsApp — Plan anual",presupuesto:1500,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0),pais:"España",colaboradores:14,nicho:"Restaurante",falencia:"Pierden reservas fuera de horario de atención telefónica."},
-    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Hotel Vista Andina",cargo:"Jefe de Operaciones",email:"eduarte@andinotextil.com",telefono:"+57 300 445 2020",fuente:"Referido",productoInteres:"Setup inicial del agente IA",presupuesto:1350,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2),pais:"Colombia",colaboradores:22,nicho:"Hotel",falencia:"No automatizan confirmaciones de check-in por WhatsApp."},
-    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"+507 6611-3030",fuente:"Feria comercial",productoInteres:"Agente IA + soporte prioritario",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1),pais:"Panamá",colaboradores:9,nicho:"Clínica",falencia:"Alto volumen de citas perdidas por falta de recordatorios automáticos."},
-    {id:uid(),nombre:"Luis",apellido:"Fermín",empresaNombre:"Restaurante La Terraza",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"+34 622 118 040",fuente:"Sitio web",productoInteres:"Agente IA WhatsApp — Plan mensual",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0),pais:"España",colaboradores:8,nicho:"Restaurante",falencia:""},
-    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Hotel Boutique Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"+52 33 5544 5050",fuente:"Llamada en frío",productoInteres:"Agente IA WhatsApp — Plan mensual",presupuesto:1450,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6),pais:"México",colaboradores:17,nicho:"Hotel",falencia:"Sin agente que responda reservas de madrugada."},
-    {id:uid(),nombre:"Tomás",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"+507 6644-6060",fuente:"Referido",productoInteres:"Agente IA WhatsApp — Plan anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9),pais:"Panamá",colaboradores:60,nicho:"Otro",falencia:""},
-    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Clínica Dental Gómez",cargo:"Administradora",email:"pgomez@andinotextil.com",telefono:"+34 655 990 070",fuente:"Google Ads",productoInteres:"Agente IA + soporte prioritario",presupuesto:1250,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0),pais:"España",colaboradores:5,nicho:"Clínica",falencia:"No dan seguimiento automático a pacientes que no confirman cita."},
-  ];
-  const clientes = [
-    {id:"cl1", nombre:"Ferretería del Istmo", empresaId:"e1", contactoId:"c1", segmento:"Corporativo", vendedorId:"v1", riesgo:"bajo", ultimaCompra:iso(12), valorTotal:18400, ticketPromedio:4600, compras:4, fechaConversion:iso(210)},
-    {id:"cl2", nombre:"Grupo Andino Textil", empresaId:"e2", contactoId:"c2", segmento:"Corporativo", vendedorId:"v2", riesgo:"alto", ultimaCompra:iso(97), valorTotal:6200, ticketPromedio:3100, compras:2, fechaConversion:iso(160)},
-    {id:"cl3", nombre:"Clínica San Rafael", empresaId:"e3", contactoId:"c3", segmento:"PyME", vendedorId:"v3", riesgo:"medio", ultimaCompra:iso(48), valorTotal:9700, ticketPromedio:2425, compras:4, fechaConversion:iso(300)},
-  ];
-  const oportunidades = [
-    {id:uid(), nombre:"Renovación anual — Ferretería del Istmo", clienteId:"cl1", empresaId:"e1", vendedorId:"v1", valor:4200, etapa:"negociacion", probabilidad:70, fechaCierre: iso(-8), ultimaActividad: iso(1), diasEtapaDesde: iso(3)},
-    {id:uid(), nombre:"Consultoría implementación textil", empresaId:"e2", vendedorId:"v2", valor:1800, etapa:"propuesta", probabilidad:55, fechaCierre: iso(-15), ultimaActividad: iso(7), diasEtapaDesde: iso(9)},
-    {id:uid(), nombre:"Soporte Premium — San Rafael", clienteId:"cl3", empresaId:"e3", vendedorId:"v3", valor:900, etapa:"calificado", probabilidad:35, fechaCierre: iso(-20), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
-    {id:uid(), nombre:"Licencia Starter — Comercial Molina", empresaId:null, vendedorId:"v2", valor:650, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-30), ultimaActividad: iso(6), diasEtapaDesde: iso(6)},
-    {id:uid(), nombre:"Plan corporativo — Import Herrera", empresaId:null, vendedorId:"v3", valor:4500, etapa:"contactado", probabilidad:20, fechaCierre: iso(-25), ultimaActividad: iso(9), diasEtapaDesde: iso(9)},
-    {id:uid(), nombre:"Licencia Starter — Textiles Boquete", empresaId:null, vendedorId:"v1", valor:5000, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-5), ultimaActividad: iso(0), diasEtapaDesde: iso(0)},
-    {id:uid(), nombre:"Ampliación soporte — Andino Textil", clienteId:"cl2", empresaId:"e2", vendedorId:"v2", valor:1100, etapa:"ganado", probabilidad:100, fechaCierre: iso(2), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
-    {id:uid(), nombre:"Plan Starter — prospecto frío", empresaId:null, vendedorId:"v1", valor:650, etapa:"perdido", probabilidad:0, fechaCierre: iso(4), ultimaActividad: iso(4), diasEtapaDesde: iso(4)},
-  ];
-  const actividades = [
-    {id:uid(), tipo:"tarea", titulo:"Llamar a Camila Torres para calificar presupuesto", fecha: iso(1), estado:"pendiente", vendedorId:"v1"},
-    {id:uid(), tipo:"seguimiento", titulo:"Seguimiento de propuesta — Hotel Vista Andina", fecha: iso(-2), estado:"pendiente", vendedorId:"v2"},
-    {id:uid(), tipo:"reunion", titulo:"Reunión de cierre — Restaurante El Bistró", fecha: iso(-1), estado:"pendiente", vendedorId:"v1"},
-  ];
+  /* Sin datos de ejemplo: esta herramienta se usa en producción para contactar y
+     registrar clientes reales desde el día uno, así que arranca completamente vacía. */
+  const empresas = [];
+  const contactos = [];
+  const leads = [];
+  const clientes = [];
+  const oportunidades = [];
+  const actividades = [];
+  const vendedores = [];
   const scoringReglas = [
     {id:uid(), evento:"Formulario enviado", puntos:10},
     {id:uid(), evento:"Teléfono confirmado", puntos:5},
@@ -404,19 +367,67 @@ function seedData(){
     {etiqueta:"Caliente", min:41, max:70, color:"naranja"},
     {etiqueta:"Prioridad", min:71, max:100, color:"red"},
   ];
-  return {empresas, contactos, leads, clientes, oportunidades, actividades, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
+  return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
 }
 
 let DB = load();
 function load(){
   let raw = null;
   try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ /* localStorage no disponible (ej. file://) */ }
-  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      return migrateDB(parsed);
+    }catch(e){}
+  }
   const s = seedData();
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch(e){ /* continuar solo en memoria */ }
   return s;
 }
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){ /* continuar solo en memoria */ } }
+
+/* ---------------------------- MIGRACIÓN DE DATOS GUARDADOS ---------------------------- */
+/* Cada mejora agrega campos nuevos (país, nicho, falencia, notas de seguimiento, etc.).
+   Sin esto, los prospectos/clientes guardados ANTES de esa mejora se quedan con la
+   estructura vieja para siempre — por eso el mapa se veía vacío y el dashboard parecía
+   "no actualizarse": no era un problema de tiempo real, era un dato viejo sin migrar. */
+function migrateDB(db){
+  db.leads = (db.leads||[]).map(l=>({
+    pais: "", colaboradores: 0, nicho: "Otro", falencia: "",
+    puntosEncaje: 0, estado: "nuevo", motivoDescarte: "",
+    ...l,
+  }));
+  db.clientes = (db.clientes||[]).map(c=>({
+    notasSeguimiento: [], riesgo: "bajo", segmento: "Nuevo",
+    valorTotal: 0, ticketPromedio: 0, compras: 0,
+    ...c,
+  }));
+  db.oportunidades = (db.oportunidades||[]).map(o=>({
+    estadoAgenteIA: "No implementado", probabilidad: 0,
+    diasEtapaDesde: o.diasEtapaDesde || todayISO(),
+    ...o,
+  }));
+  db.actividades = (db.actividades||[]).map(a=>({
+    estado: "pendiente",
+    ...a,
+    estado: a.estado==="vencida" ? "pendiente" : (a.estado||"pendiente"), // "vencida" ahora se calcula en vivo, no se guarda
+  }));
+  db.empresas = (db.empresas||[]).map(e=>({ pais:"Panamá", ciudad:"", industria:"", ...e }));
+  db.contactos = db.contactos || [];
+  db.oportunidadesHistorial = db.oportunidadesHistorial || [];
+  db.scoringReglas = db.scoringReglas || seedData().scoringReglas;
+  db.scoringRangos = db.scoringRangos || seedData().scoringRangos;
+  // El equipo de vendedores antes venía fijo en el código (Julieta Ríos, Marco Ábrego, Diana Cedeño).
+  // Si el usuario ya tenía datos guardados con esos IDs (v1/v2/v3), se preservan sus nombres para
+  // que los registros existentes no se queden sin responsable asignado.
+  if(!db.vendedores){
+    const idsEnUso = new Set();
+    [...(db.leads||[]), ...(db.clientes||[]), ...(db.oportunidades||[]), ...(db.actividades||[])].forEach(r=>{ if(r.vendedorId) idsEnUso.add(r.vendedorId); });
+    const nombresLegado = {v1:"Julieta Ríos", v2:"Marco Ábrego", v3:"Diana Cedeño"};
+    db.vendedores = [...idsEnUso].filter(id=>nombresLegado[id]).map(id=>({id, nombre:nombresLegado[id]}));
+  }
+  return db;
+}
 
 /* ---------------------------- RULES (centralizadas) ---------------------------- */
 function scoreLabel(puntuacion){
@@ -426,7 +437,30 @@ function scoreLabel(puntuacion){
 function scoreClass(etiqueta){
   return {"Frío":"score-frio","Tibio":"score-tibio","Caliente":"score-caliente","Prioridad":"score-prioridad"}[etiqueta] || "score-frio";
 }
-function vendedorNombre(id){ const v=VENDEDORES.find(x=>x.id===id); return v? v.nombre : "Sin asignar"; }
+function vendedorNombre(id){ const v=DB.vendedores.find(x=>x.id===id); return v? v.nombre : "Sin asignar"; }
+
+/* Convierte un prospecto en cliente. Función central reutilizada desde la tabla de
+   Prospectos y desde el popup del Mapa global (los popups de Leaflet viven fuera del
+   ciclo normal de eventos delegados, por eso también se expone en window). */
+function convertirLeadACliente(leadId){
+  const l = DB.leads.find(x=>x.id===leadId);
+  if(!l) return;
+  l.estado = "convertido";
+  DB.clientes.push({
+    id:uid(), nombre: l.empresaNombre || `${l.nombre} ${l.apellido}`, empresaId:null, contactoId:null,
+    segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
+    ultimaCompra: todayISO(), valorTotal:0, ticketPromedio:0, compras:0, fechaConversion: todayISO(),
+    notasSeguimiento: [{fecha: todayISO(), texto: `Convertido desde prospecto (${l.pais? paisInfo(l.pais)?.flag+' '+l.pais : 'sin país'})`, vendedorId: l.vendedorId}],
+  });
+  save();
+  toast(`${l.nombre} ${l.apellido} convertido a cliente`);
+  renderView();
+}
+window.convertirDesdeMapa = function(leadId){ convertirLeadACliente(leadId); };
+window.editarDesdeMapa = function(leadId){
+  const l = DB.leads.find(x=>x.id===leadId);
+  if(l) openModal(leadForm(l));
+};
 function empresaNombre(id){ const e=DB.empresas.find(x=>x.id===id); return e? e.nombre : "—"; }
 const ETAPAS = ["nuevo","contactado","calificado","propuesta","negociacion","ganado","perdido"];
 const ETAPA_LABEL = {nuevo:"Nuevo",contactado:"Contactado",calificado:"Calificado",propuesta:"Propuesta",negociacion:"Negociación",ganado:"Ganado",perdido:"Perdido"};
@@ -436,6 +470,7 @@ const NAV = [
   {group:"Inicio", items:[
     {id:"dashboard", label:"Dashboard", ready:true},
     {id:"alertas", label:"Alertas y tareas", ready:true},
+    {id:"equipo", label:"Equipo", ready:true},
   ]},
   {group:"Prospección", items:[
     {id:"leads", label:"Prospectos", ready:true},
@@ -519,6 +554,7 @@ function renderView(){
   const renderers = {
     dashboard: viewDashboard,
     alertas: viewAlertas,
+    equipo: viewEquipo,
     leads: viewLeads,
     mapa: viewMapaGlobal,
     scoring: viewScoring,
@@ -653,8 +689,8 @@ function viewDashboard(){
         ${estancadas.length? `<div class="alert-row"><span class="txt"><b>${estancadas.length}</b> oportunidades estancadas · ${fmtMoney(valorEstancado)}</span><button class="btn btn-sm" data-goto="pipeline">Ver</button></div>`:""}
         ${clientesRiesgo? `<div class="alert-row"><span class="txt"><b>${clientesRiesgo}</b> clientes en riesgo alto</span><button class="btn btn-sm" data-goto="riesgo">Ver</button></div>`:""}
         ${tareasVencidas.length? `<div class="alert-row"><span class="txt">⏰ <b>${tareasVencidas.length}</b> tarea(s) vencida(s)</span><button class="btn btn-sm" data-goto="alertas">Ver</button></div>`:""}
-        ${cumplMeta<60? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><button class="btn btn-sm" data-goto="oportunidades">Ver</button></div>`:""}
-        ${!calientesSinContactar && !estancadas.length && !clientesRiesgo && !tareasVencidas.length && cumplMeta>=60? `<div class="empty" style="padding:12px 0;">Sin alertas activas ahora mismo.</div>`:""}
+        ${cumplMeta<60 && opsAbiertas.length+ganadas.length+perdidas.length>0? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><button class="btn btn-sm" data-goto="oportunidades">Ver</button></div>`:""}
+        ${!calientesSinContactar && !estancadas.length && !clientesRiesgo && !tareasVencidas.length && (cumplMeta>=60 || opsAbiertas.length+ganadas.length+perdidas.length===0)? `<div class="empty" style="padding:12px 0;">Sin alertas activas ahora mismo.</div>`:""}
       </div>
     </div>
     <div>
@@ -699,9 +735,59 @@ function viewAlertas(){
   </div>`;
 }
 
+/* --------------------------- EQUIPO (vendedores/closers) --------------------------- */
+function viewEquipo(){
+  return `
+  <div class="toolbar">
+    <div style="color:var(--muted);font-size:12.5px;">${DB.vendedores.length} integrante(s) del equipo</div>
+    <button class="btn btn-primary" id="btnNuevoVendedor">+ Agregar integrante</button>
+  </div>
+  ${DB.vendedores.length? `
+  <div class="grid cols-3">
+    ${DB.vendedores.map(v=>{
+      const misLeads = DB.leads.filter(l=>l.vendedorId===v.id && l.estado!=="convertido" && l.estado!=="perdido" && l.estado!=="descartado").length;
+      const misClientes = DB.clientes.filter(c=>c.vendedorId===v.id).length;
+      const misVentas = DB.oportunidades.filter(o=>o.vendedorId===v.id && o.etapa==="ganado").reduce((a,o)=>a+o.valor,0);
+      return `
+      <div class="card card-pad">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <b>${v.nombre}</b>
+            <div style="color:var(--muted);font-size:12px;margin-top:2px;">${v.rol||"Closer"}</div>
+          </div>
+          <button class="btn btn-sm" data-editar-vendedor="${v.id}">Editar</button>
+        </div>
+        <div style="display:flex;gap:14px;margin-top:12px;font-size:12.5px;">
+          <div><b>${misLeads}</b><br><span style="color:var(--muted);">prospectos activos</span></div>
+          <div><b>${misClientes}</b><br><span style="color:var(--muted);">clientes</span></div>
+          <div><b>${fmtMoney(misVentas)}</b><br><span style="color:var(--muted);">vendido</span></div>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>` : `<div class="card"><div class="empty"><div class="big">👥</div>Aún no hay integrantes en el equipo. Agrega a los closers que van a usar el CRM para poder asignarles prospectos, clientes y tareas.</div></div>`}
+  `;
+}
+
+function vendedorForm(vendedorId){
+  const v = vendedorId? DB.vendedores.find(x=>x.id===vendedorId) : {nombre:"", rol:"Closer"};
+  return `
+  <div class="modal-head"><h3>${vendedorId? "Editar integrante":"Agregar integrante"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="field"><label>Nombre completo</label><input id="ve_nombre" value="${v.nombre}"></div>
+      <div class="field"><label>Rol</label><select id="ve_rol">${["Closer","Gerente Comercial","Setter","Otro"].map(r=>`<option ${r===(v.rol||"Closer")?'selected':''}>${r}</option>`).join("")}</select></div>
+    </div>
+  </div>
+  <div class="modal-foot" style="flex-wrap:wrap;">
+    <button class="btn" data-close>Cancelar</button>
+    ${vendedorId? `<button class="btn" id="btnEliminarVendedor" data-id="${vendedorId}" style="border-color:var(--red);color:var(--red);">Eliminar</button>`:""}
+    <button class="btn btn-primary" id="saveVendedor" data-id="${vendedorId||''}">${vendedorId? "Guardar cambios":"Agregar"}</button>
+  </div>`;
+}
+
 /* --------------------------- FORMULARIO DE TAREA (nueva / editar / completar) --------------------------- */
 function tareaForm(tareaId){
-  const t = tareaId? DB.actividades.find(x=>x.id===tareaId) : {tipo:"tarea", titulo:"", fecha: todayISO().slice(0,16), estado:"pendiente", vendedorId:VENDEDORES[0].id};
+  const t = tareaId? DB.actividades.find(x=>x.id===tareaId) : {tipo:"tarea", titulo:"", fecha: todayISO().slice(0,16), estado:"pendiente", vendedorId:(DB.vendedores[0]?.id||"")};
   const fechaInput = t.fecha ? new Date(t.fecha).toISOString().slice(0,16) : "";
   return `
   <div class="modal-head"><h3>${tareaId? "Editar tarea":"Nueva tarea"}</h3><button class="close-x" data-close>✕</button></div>
@@ -709,7 +795,7 @@ function tareaForm(tareaId){
     ${tareaId && tareaVencida(t)? `<div class="card card-pad" style="margin-bottom:12px;background:var(--red-soft);border-color:#F1C9BE;"><b>⏰ Esta tarea está vencida</b></div>`:""}
     <div class="form-grid">
       <div class="field"><label>Tipo</label><select id="ta_tipo">${["tarea","llamada","seguimiento","reunion"].map(ty=>`<option ${ty===t.tipo?'selected':''}>${ty}</option>`).join("")}</select></div>
-      <div class="field"><label>Responsable</label><select id="ta_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===t.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Responsable</label><select id="ta_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===t.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field" style="grid-column:1/-1;"><label>Descripción</label><input id="ta_titulo" value="${t.titulo}" placeholder="Ej: Llamar a Restaurante La Marina para dar seguimiento"></div>
       <div class="field"><label>Fecha y hora</label><input type="datetime-local" id="ta_fecha" value="${fechaInput}"></div>
       <div class="field"><label>Estado</label><select id="ta_estado">${["pendiente","completada"].map(e=>`<option ${e===t.estado?'selected':''}>${e}</option>`).join("")}</select></div>
@@ -820,7 +906,7 @@ function googleCaptureForm(){
 }
 
 function leadForm(lead){
-  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:VENDEDORES[0].id,prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
+  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:(DB.vendedores[0]?.id||""),prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
   const enc = calcularEncaje(l);
   const descartado = lead && l.estado==="descartado";
   return `
@@ -843,7 +929,7 @@ function leadForm(lead){
       <div class="field"><label>N.º de colaboradores</label><input type="number" id="f_colaboradores" min="0" value="${l.colaboradores}"></div>
       <div class="field"><label>Nicho de negocio</label><select id="f_nicho">${NICHOS.map(n=>`<option ${n===l.nicho?'selected':''}>${n}</option>`).join("")}</select></div>
       <div class="field"><label>Fuente</label><select id="f_fuente">${FUENTES.map(f=>`<option ${f===l.fuente?'selected':''}>${f}</option>`).join("")}</select></div>
-      <div class="field"><label>Vendedor asignado</label><select id="f_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor asignado</label><select id="f_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Servicio de interés / plan</label><input id="f_producto" value="${l.productoInteres}" placeholder="Ej: Agente IA WhatsApp — Setup + mensualidad"></div>
       <div class="field"><label>Presupuesto informado ($)</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
       <div class="field"><label>Prioridad</label><select id="f_prioridad">${["baja","media","alta","critica"].map(p=>`<option ${p===l.prioridad?'selected':''}>${p}</option>`).join("")}</select></div>
@@ -898,7 +984,7 @@ function agendarForm(leadId){
     <div class="form-grid">
       <div class="field"><label>Fecha</label><input type="date" id="ag_fecha" value="${hoy}"></div>
       <div class="field"><label>Hora (nuestra zona — Panamá)</label><input type="time" id="ag_hora" value="10:00"></div>
-      <div class="field"><label>Responsable</label><select id="ag_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Responsable</label><select id="ag_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Hora equivalente del cliente</label><input id="ag_horacliente" disabled></div>
       <div class="field" style="grid-column:1/-1;"><label>Motivo / agenda de la reunión</label><input id="ag_motivo" value="Llamada de cierre — ${l.empresaNombre||l.nombre}"></div>
     </div>
@@ -913,7 +999,8 @@ function agendarForm(leadId){
 
 /* --------------------------- MAPA GLOBAL DE PROSPECTOS --------------------------- */
 function viewMapaGlobal(){
-  const conPais = DB.leads.filter(l=>l.pais);
+  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais) && l.estado!=="descartado");
+  const sinPais = DB.leads.filter(l=>!l.pais || !paisInfo(l.pais));
   return `
   <div class="card card-pad" style="margin-bottom:14px;">
     <b>Mapa mundial de prospectos</b>
@@ -925,6 +1012,13 @@ function viewMapaGlobal(){
       <span style="margin-left:auto;">🔴 Encaje alto (≥70) · 🟠 Medio (40–69) · 🔵 Bajo (&lt;40)</span>
     </div>
   </div>
+  ${sinPais.length? `
+  <div class="card card-pad" style="margin-bottom:14px;background:var(--amber-soft);border-color:#EAD3A3;">
+    <b>⚠ ${sinPais.length} prospecto(s) sin país registrado</b> — no aparecen en el mapa hasta que se complete su ubicación.
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+      ${sinPais.map(l=>`<button class="btn btn-sm" data-lead="${l.id}">${l.nombre} ${l.apellido} — agregar país</button>`).join("")}
+    </div>
+  </div>`:""}
   <div class="card" style="padding:0;overflow:hidden;">
     <div id="mapaMundi" style="width:100%;height:460px;"></div>
   </div>
@@ -947,7 +1041,7 @@ function viewMapaGlobal(){
             <td data-label="Presupuesto" class="mono">${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'<span class="badge badge-convertido">En rango</span>':''}</td>
             <td data-label="Encaje"><span class="score-chip ${enc.pts>=70?'score-prioridad':enc.pts>=40?'score-caliente':'score-frio'}">${enc.pts} pts</span></td>
           </tr>`;
-        }).join("") : `<tr><td colspan="7"><div class="empty">Ningún prospecto tiene país registrado todavía. Edítalos desde "Prospectos" para verlos aquí.</div></td></tr>`}
+        }).join("") : `<tr><td colspan="7"><div class="empty">Ningún prospecto activo tiene país registrado todavía. Edítalos desde "Prospectos" para verlos aquí.</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -965,7 +1059,13 @@ function initMapaGlobal(){
     maxZoom: 18
   }).addTo(map);
 
-  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais));
+  // Bug clásico de Leaflet: si el contenedor aún no tiene su tamaño final cuando el mapa
+  // se inicializa (común al cambiar de vista en una SPA), los tiles se calculan mal y el
+  // mapa se ve en blanco o cortado, sobre todo en escritorio. Forzamos un recálculo.
+  setTimeout(()=> map.invalidateSize(), 100);
+  window.addEventListener("resize", ()=> map.invalidateSize());
+
+  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais) && l.estado!=="descartado");
 
   if(!conPais.length){
     map.setView([20,0], 2);
@@ -1017,6 +1117,10 @@ function initMapaGlobal(){
             <span style="font-size:11.5px;">Presupuesto: ${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'✓ en rango':'⚠ fuera de rango'}</span><br>
             ${l.falencia? `<span style="font-size:11.5px;color:#B9791A;">Falencia: ${l.falencia}</span><br>`:''}
             <span style="font-size:11.5px;font-weight:700;">Encaje: ${enc.pts} pts</span>
+          </div>
+          <div style="border-top:1px solid #E4E6EE;margin-top:8px;padding-top:8px;display:flex;gap:6px;">
+            <button class="btn btn-sm" style="flex:1;" onclick="window.editarDesdeMapa('${l.id}')">Editar</button>
+            ${l.estado!=="convertido"? `<button class="btn btn-sm btn-primary" style="flex:1;" onclick="window.convertirDesdeMapa('${l.id}')">Registrar como cliente</button>` : `<span class="badge badge-convertido" style="align-self:center;">Ya es cliente</span>`}
           </div>
         </div>`;
       marker.bindPopup(popupHtml, {maxWidth:280});
@@ -1117,7 +1221,7 @@ function viewClientes(){
 
 /* --------------------------- FORMULARIO CLIENTE (nuevo o edición) --------------------------- */
 function clienteForm(cliente){
-  const c = cliente || {nombre:"",empresaId:"",segmento:"PyME",vendedorId:VENDEDORES[0].id,riesgo:"bajo",valorTotal:0,ticketPromedio:0,compras:0,ultimaCompra:todayISO()};
+  const c = cliente || {nombre:"",empresaId:"",segmento:"PyME",vendedorId:(DB.vendedores[0]?.id||""),riesgo:"bajo",valorTotal:0,ticketPromedio:0,compras:0,ultimaCompra:todayISO()};
   return `
   <div class="modal-head"><h3>${cliente? "Editar cliente":"Nuevo cliente"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -1125,7 +1229,7 @@ function clienteForm(cliente){
       <div class="field"><label>Nombre / Empresa</label><input id="cl_nombre" value="${c.nombre}"></div>
       <div class="field"><label>Empresa vinculada</label><select id="cl_empresa"><option value="">— Sin vincular —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===c.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Segmento</label><select id="cl_segmento">${["Nuevo","PyME","Corporativo"].map(s=>`<option ${s===c.segmento?'selected':''}>${s}</option>`).join("")}</select></div>
-      <div class="field"><label>Vendedor responsable</label><select id="cl_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===c.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor responsable</label><select id="cl_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===c.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Nivel de riesgo</label><select id="cl_riesgo">${["bajo","medio","alto"].map(r=>`<option ${r===c.riesgo?'selected':''}>${r}</option>`).join("")}</select></div>
       <div class="field"><label>Valor total acumulado ($)</label><input type="number" id="cl_valor" value="${c.valorTotal}"></div>
       <div class="field"><label>Ticket promedio ($)</label><input type="number" id="cl_ticket" value="${c.ticketPromedio}"></div>
@@ -1387,14 +1491,14 @@ function viewOportunidades(){
    FORMULARIO — OPORTUNIDAD (nueva o edición)
 ============================================================================ */
 function oportunidadForm(op){
-  const o = op || {nombre:"", empresaId:"", vendedorId:VENDEDORES[0].id, valor:"", etapa:"nuevo", probabilidad:20, estadoAgenteIA:ESTADOS_AGENTE_IA[0]};
+  const o = op || {nombre:"", empresaId:"", vendedorId:(DB.vendedores[0]?.id||""), valor:"", etapa:"nuevo", probabilidad:20, estadoAgenteIA:ESTADOS_AGENTE_IA[0]};
   return `
   <div class="modal-head"><h3>${op? "Editar oportunidad":"Nueva oportunidad"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="field"><label>Nombre de la oportunidad</label><input id="op_nombre" value="${o.nombre}"></div>
       <div class="field"><label>Empresa</label><select id="op_empresa"><option value="">— Sin empresa —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===o.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
-      <div class="field"><label>Vendedor asignado</label><select id="op_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===o.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor asignado</label><select id="op_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===o.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Valor estimado ($)</label><input type="number" id="op_valor" value="${o.valor}"></div>
       <div class="field"><label>Etapa comercial</label><select id="op_etapa">${ETAPAS.map(et=>`<option value="${et}" ${et===o.etapa?'selected':''}>${ETAPA_LABEL[et]}</option>`).join("")}</select></div>
       <div class="field"><label>Probabilidad de cierre (%)</label><input type="number" id="op_prob" min="0" max="100" value="${o.probabilidad}"></div>
@@ -1425,6 +1529,13 @@ function bindViewEvents(){
   const btnNuevaTarea = document.getElementById("btnNuevaTarea");
   if(btnNuevaTarea) btnNuevaTarea.addEventListener("click", ()=> openModal(tareaForm()));
 
+  // EQUIPO
+  const btnNuevoVendedor = document.getElementById("btnNuevoVendedor");
+  if(btnNuevoVendedor) btnNuevoVendedor.addEventListener("click", ()=> openModal(vendedorForm()));
+  document.querySelectorAll("[data-editar-vendedor]").forEach(btn=>{
+    btn.addEventListener("click", ()=> openModal(vendedorForm(btn.dataset.editarVendedor)));
+  });
+
   // Filas de prospecto clicables en cualquier vista (Prospectos, Mapa global)
   document.querySelectorAll("[data-lead]").forEach(row=>{
     row.addEventListener("click", e=>{
@@ -1453,17 +1564,7 @@ function bindViewEvents(){
     document.querySelectorAll("[data-convert]").forEach(btn=>{
       btn.addEventListener("click", e=>{
         e.stopPropagation();
-        const l = DB.leads.find(x=>x.id===btn.dataset.convert);
-        if(!l) return;
-        l.estado = "convertido";
-        DB.clientes.push({
-          id:uid(), nombre:`${l.nombre} ${l.apellido}`, empresaId:null, contactoId:null,
-          segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
-          ultimaCompra: todayISO(), valorTotal:0, ticketPromedio:0, compras:0, fechaConversion: todayISO()
-        });
-        save();
-        toast(`${l.nombre} ${l.apellido} convertido a cliente`);
-        renderView();
+        convertirLeadACliente(btn.dataset.convert);
       });
     });
   }
@@ -1543,6 +1644,38 @@ function bindViewEvents(){
 ============================================================================ */
 function bindModalEvents(){
   document.querySelectorAll("#modalBox [data-close]").forEach(b=> b.addEventListener("click", closeModal));
+
+  // Guardar / eliminar integrante del equipo
+  const saveVendedorBtn = document.getElementById("saveVendedor");
+  if(saveVendedorBtn){
+    saveVendedorBtn.addEventListener("click", ()=>{
+      const nombre = document.getElementById("ve_nombre").value.trim();
+      if(!nombre){ toast("El nombre es obligatorio", true); return; }
+      const id = saveVendedorBtn.dataset.id;
+      const rol = document.getElementById("ve_rol").value;
+      if(id){
+        Object.assign(DB.vendedores.find(v=>v.id===id), {nombre, rol});
+        toast("Integrante actualizado");
+      }else{
+        DB.vendedores.push({id: uid(), nombre, rol});
+        toast("Integrante agregado al equipo");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
+  const btnEliminarVendedor = document.getElementById("btnEliminarVendedor");
+  if(btnEliminarVendedor){
+    btnEliminarVendedor.addEventListener("click", ()=>{
+      const id = btnEliminarVendedor.dataset.id;
+      const enUso = [...DB.leads, ...DB.clientes, ...DB.oportunidades, ...DB.actividades].some(r=>r.vendedorId===id);
+      if(enUso){
+        toast("No se puede eliminar: tiene prospectos, clientes o tareas asignadas", true);
+        return;
+      }
+      DB.vendedores = DB.vendedores.filter(v=>v.id!==id);
+      save(); toast("Integrante eliminado"); closeModal(); renderView();
+    });
+  }
 
   // Guardar tarea (nueva o edición), completar, eliminar
   const saveTareaBtn = document.getElementById("saveTarea");
@@ -1744,7 +1877,7 @@ function bindModalEvents(){
         nicho: document.getElementById("gc_nicho").value,
         falencia: document.getElementById("gc_falencia").value,
         fuente: document.getElementById("gc_fuente").value,
-        vendedorId: VENDEDORES[0].id,
+        vendedorId: (DB.vendedores[0]?.id||""),
         productoInteres: "",
         presupuesto: 0,
         prioridad: "media",
