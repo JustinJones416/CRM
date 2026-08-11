@@ -83,6 +83,8 @@ a{color:inherit;}
 .kpi .insight.info{background:var(--info-soft);color:var(--info);}
 .kpi.clickable{cursor:pointer;transition:.15s;}
 .kpi.clickable:hover{border-color:var(--accent);transform:translateY(-1px);}
+.clickable{cursor:pointer;transition:.15s;}
+.alert-row.clickable:hover{background:var(--paper);border-radius:8px;}
 
 .btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px;}
 .btn:hover{border-color:#c7cade;}
@@ -254,6 +256,9 @@ const STORAGE_KEY = "nexocrm_v1";
 function uid(){ return Math.random().toString(36).slice(2,10); }
 function todayISO(){ return new Date().toISOString(); }
 function daysAgo(iso){ return Math.floor((Date.now()-new Date(iso).getTime())/86400000); }
+/* Una tarea está vencida si sigue pendiente y su fecha ya pasó — se calcula siempre en vivo,
+   nunca se guarda como estado fijo, así el dashboard refleja la realidad sin desactualizarse. */
+function tareaVencida(a){ return a.estado==="pendiente" && new Date(a.fecha).getTime() < Date.now(); }
 function fmtMoney(n){ return "$"+Number(n||0).toLocaleString("es-PA",{minimumFractionDigits:0,maximumFractionDigits:0}); }
 function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso); return d.toLocaleDateString("es-PA",{day:"2-digit",month:"short"}); }
 
@@ -340,13 +345,6 @@ const MOTIVOS_DESCARTE = [
   "Ya tiene un servicio similar contratado",
   "Otro",
 ];
-const PRODUCTOS_SEED = [
-  {id:"p1", nombre:"Plan Corporativo Anual", categoria:"Software", precio:4200},
-  {id:"p2", nombre:"Consultoría de Implementación", categoria:"Servicio", precio:1800},
-  {id:"p3", nombre:"Licencia Starter", categoria:"Software", precio:650},
-  {id:"p4", nombre:"Soporte Premium", categoria:"Servicio", precio:900},
-];
-
 function seedData(){
   const empresas = [
     {id:"e1", nombre:"Ferretería del Istmo", industria:"Retail", pais:"Panamá", ciudad:"Ciudad de Panamá"},
@@ -361,13 +359,13 @@ function seedData(){
   const now = Date.now();
   const iso = (daysBack)=> new Date(now - daysBack*86400000).toISOString();
   const leads = [
-    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Restaurante El Bistró",cargo:"Compradora",email:"camila@tboquete.com",telefono:"+34 611 220 330",fuente:"Google Ads",productoInteres:"Plan Corporativo Anual",presupuesto:1500,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0),pais:"España",colaboradores:14,nicho:"Restaurante",falencia:"Pierden reservas fuera de horario de atención telefónica."},
-    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Hotel Vista Andina",cargo:"Jefe de Operaciones",email:"eduarte@andinotextil.com",telefono:"+57 300 445 2020",fuente:"Referido",productoInteres:"Consultoría de Implementación",presupuesto:1350,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2),pais:"Colombia",colaboradores:22,nicho:"Hotel",falencia:"No automatizan confirmaciones de check-in por WhatsApp."},
-    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"+507 6611-3030",fuente:"Feria comercial",productoInteres:"Soporte Premium",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1),pais:"Panamá",colaboradores:9,nicho:"Clínica",falencia:"Alto volumen de citas perdidas por falta de recordatorios automáticos."},
-    {id:uid(),nombre:"Luis",apellido:"Fermín",empresaNombre:"Restaurante La Terraza",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"+34 622 118 040",fuente:"Sitio web",productoInteres:"Licencia Starter",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0),pais:"España",colaboradores:8,nicho:"Restaurante",falencia:""},
-    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Hotel Boutique Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"+52 33 5544 5050",fuente:"Llamada en frío",productoInteres:"Licencia Starter",presupuesto:1450,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6),pais:"México",colaboradores:17,nicho:"Hotel",falencia:"Sin agente que responda reservas de madrugada."},
-    {id:uid(),nombre:"Tomás",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"+507 6644-6060",fuente:"Referido",productoInteres:"Plan Corporativo Anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9),pais:"Panamá",colaboradores:60,nicho:"Otro",falencia:""},
-    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Clínica Dental Gómez",cargo:"Administradora",email:"pgomez@andinotextil.com",telefono:"+34 655 990 070",fuente:"Google Ads",productoInteres:"Soporte Premium",presupuesto:1250,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0),pais:"España",colaboradores:5,nicho:"Clínica",falencia:"No dan seguimiento automático a pacientes que no confirman cita."},
+    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Restaurante El Bistró",cargo:"Compradora",email:"camila@tboquete.com",telefono:"+34 611 220 330",fuente:"Google Ads",productoInteres:"Agente IA WhatsApp — Plan anual",presupuesto:1500,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0),pais:"España",colaboradores:14,nicho:"Restaurante",falencia:"Pierden reservas fuera de horario de atención telefónica."},
+    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Hotel Vista Andina",cargo:"Jefe de Operaciones",email:"eduarte@andinotextil.com",telefono:"+57 300 445 2020",fuente:"Referido",productoInteres:"Setup inicial del agente IA",presupuesto:1350,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2),pais:"Colombia",colaboradores:22,nicho:"Hotel",falencia:"No automatizan confirmaciones de check-in por WhatsApp."},
+    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"+507 6611-3030",fuente:"Feria comercial",productoInteres:"Agente IA + soporte prioritario",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1),pais:"Panamá",colaboradores:9,nicho:"Clínica",falencia:"Alto volumen de citas perdidas por falta de recordatorios automáticos."},
+    {id:uid(),nombre:"Luis",apellido:"Fermín",empresaNombre:"Restaurante La Terraza",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"+34 622 118 040",fuente:"Sitio web",productoInteres:"Agente IA WhatsApp — Plan mensual",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0),pais:"España",colaboradores:8,nicho:"Restaurante",falencia:""},
+    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Hotel Boutique Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"+52 33 5544 5050",fuente:"Llamada en frío",productoInteres:"Agente IA WhatsApp — Plan mensual",presupuesto:1450,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6),pais:"México",colaboradores:17,nicho:"Hotel",falencia:"Sin agente que responda reservas de madrugada."},
+    {id:uid(),nombre:"Tomás",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"+507 6644-6060",fuente:"Referido",productoInteres:"Agente IA WhatsApp — Plan anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9),pais:"Panamá",colaboradores:60,nicho:"Otro",falencia:""},
+    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Clínica Dental Gómez",cargo:"Administradora",email:"pgomez@andinotextil.com",telefono:"+34 655 990 070",fuente:"Google Ads",productoInteres:"Agente IA + soporte prioritario",presupuesto:1250,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0),pais:"España",colaboradores:5,nicho:"Clínica",falencia:"No dan seguimiento automático a pacientes que no confirman cita."},
   ];
   const clientes = [
     {id:"cl1", nombre:"Ferretería del Istmo", empresaId:"e1", contactoId:"c1", segmento:"Corporativo", vendedorId:"v1", riesgo:"bajo", ultimaCompra:iso(12), valorTotal:18400, ticketPromedio:4600, compras:4, fechaConversion:iso(210)},
@@ -375,19 +373,19 @@ function seedData(){
     {id:"cl3", nombre:"Clínica San Rafael", empresaId:"e3", contactoId:"c3", segmento:"PyME", vendedorId:"v3", riesgo:"medio", ultimaCompra:iso(48), valorTotal:9700, ticketPromedio:2425, compras:4, fechaConversion:iso(300)},
   ];
   const oportunidades = [
-    {id:uid(), nombre:"Renovación anual — Ferretería del Istmo", clienteId:"cl1", empresaId:"e1", productoId:"p1", vendedorId:"v1", valor:4200, etapa:"negociacion", probabilidad:70, fechaCierre: iso(-8), ultimaActividad: iso(1), diasEtapaDesde: iso(3)},
-    {id:uid(), nombre:"Consultoría implementación textil", empresaId:"e2", productoId:"p2", vendedorId:"v2", valor:1800, etapa:"propuesta", probabilidad:55, fechaCierre: iso(-15), ultimaActividad: iso(7), diasEtapaDesde: iso(9)},
-    {id:uid(), nombre:"Soporte Premium — San Rafael", clienteId:"cl3", empresaId:"e3", productoId:"p4", vendedorId:"v3", valor:900, etapa:"calificado", probabilidad:35, fechaCierre: iso(-20), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
-    {id:uid(), nombre:"Licencia Starter — Comercial Molina", empresaId:null, productoId:"p3", vendedorId:"v2", valor:650, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-30), ultimaActividad: iso(6), diasEtapaDesde: iso(6)},
-    {id:uid(), nombre:"Plan corporativo — Import Herrera", empresaId:null, productoId:"p1", vendedorId:"v3", valor:4500, etapa:"contactado", probabilidad:20, fechaCierre: iso(-25), ultimaActividad: iso(9), diasEtapaDesde: iso(9)},
-    {id:uid(), nombre:"Licencia Starter — Textiles Boquete", empresaId:null, productoId:"p3", vendedorId:"v1", valor:5000, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-5), ultimaActividad: iso(0), diasEtapaDesde: iso(0)},
-    {id:uid(), nombre:"Ampliación soporte — Andino Textil", clienteId:"cl2", empresaId:"e2", productoId:"p4", vendedorId:"v2", valor:1100, etapa:"ganado", probabilidad:100, fechaCierre: iso(2), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
-    {id:uid(), nombre:"Plan Starter — prospecto frío", empresaId:null, productoId:"p3", vendedorId:"v1", valor:650, etapa:"perdido", probabilidad:0, fechaCierre: iso(4), ultimaActividad: iso(4), diasEtapaDesde: iso(4)},
+    {id:uid(), nombre:"Renovación anual — Ferretería del Istmo", clienteId:"cl1", empresaId:"e1", vendedorId:"v1", valor:4200, etapa:"negociacion", probabilidad:70, fechaCierre: iso(-8), ultimaActividad: iso(1), diasEtapaDesde: iso(3)},
+    {id:uid(), nombre:"Consultoría implementación textil", empresaId:"e2", vendedorId:"v2", valor:1800, etapa:"propuesta", probabilidad:55, fechaCierre: iso(-15), ultimaActividad: iso(7), diasEtapaDesde: iso(9)},
+    {id:uid(), nombre:"Soporte Premium — San Rafael", clienteId:"cl3", empresaId:"e3", vendedorId:"v3", valor:900, etapa:"calificado", probabilidad:35, fechaCierre: iso(-20), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
+    {id:uid(), nombre:"Licencia Starter — Comercial Molina", empresaId:null, vendedorId:"v2", valor:650, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-30), ultimaActividad: iso(6), diasEtapaDesde: iso(6)},
+    {id:uid(), nombre:"Plan corporativo — Import Herrera", empresaId:null, vendedorId:"v3", valor:4500, etapa:"contactado", probabilidad:20, fechaCierre: iso(-25), ultimaActividad: iso(9), diasEtapaDesde: iso(9)},
+    {id:uid(), nombre:"Licencia Starter — Textiles Boquete", empresaId:null, vendedorId:"v1", valor:5000, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-5), ultimaActividad: iso(0), diasEtapaDesde: iso(0)},
+    {id:uid(), nombre:"Ampliación soporte — Andino Textil", clienteId:"cl2", empresaId:"e2", vendedorId:"v2", valor:1100, etapa:"ganado", probabilidad:100, fechaCierre: iso(2), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
+    {id:uid(), nombre:"Plan Starter — prospecto frío", empresaId:null, vendedorId:"v1", valor:650, etapa:"perdido", probabilidad:0, fechaCierre: iso(4), ultimaActividad: iso(4), diasEtapaDesde: iso(4)},
   ];
   const actividades = [
-    {id:uid(), tipo:"tarea", titulo:"Llamar a Camila Torres para calificar presupuesto", fecha: iso(-1), estado:"pendiente", vendedorId:"v1"},
-    {id:uid(), tipo:"seguimiento", titulo:"Seguimiento cotización — Grupo Andino Textil", fecha: iso(-3), estado:"vencida", vendedorId:"v2"},
-    {id:uid(), tipo:"reunion", titulo:"Reunión de cierre — Ferretería del Istmo", fecha: iso(-2), estado:"pendiente", vendedorId:"v1"},
+    {id:uid(), tipo:"tarea", titulo:"Llamar a Camila Torres para calificar presupuesto", fecha: iso(1), estado:"pendiente", vendedorId:"v1"},
+    {id:uid(), tipo:"seguimiento", titulo:"Seguimiento de propuesta — Hotel Vista Andina", fecha: iso(-2), estado:"pendiente", vendedorId:"v2"},
+    {id:uid(), tipo:"reunion", titulo:"Reunión de cierre — Restaurante El Bistró", fecha: iso(-1), estado:"pendiente", vendedorId:"v1"},
   ];
   const scoringReglas = [
     {id:uid(), evento:"Formulario enviado", puntos:10},
@@ -406,7 +404,7 @@ function seedData(){
     {etiqueta:"Caliente", min:41, max:70, color:"naranja"},
     {etiqueta:"Prioridad", min:71, max:100, color:"red"},
   ];
-  return {empresas, contactos, leads, clientes, oportunidades, productos: PRODUCTOS_SEED, actividades, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
+  return {empresas, contactos, leads, clientes, oportunidades, actividades, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
 }
 
 let DB = load();
@@ -443,8 +441,6 @@ const NAV = [
     {id:"leads", label:"Prospectos", ready:true},
     {id:"mapa", label:"Mapa global", ready:true},
     {id:"scoring", label:"Lead Scoring", ready:true},
-    {id:"fuentes", label:"Fuentes y campañas", ready:false},
-    {id:"formularios", label:"Formularios web", ready:false},
   ]},
   {group:"Clientes", items:[
     {id:"clientes", label:"Clientes", ready:true},
@@ -454,19 +450,6 @@ const NAV = [
   {group:"Ventas", items:[
     {id:"pipeline", label:"Pipeline", ready:true},
     {id:"oportunidades", label:"Oportunidades", ready:true},
-    {id:"cotizaciones", label:"Cotizaciones", ready:false},
-    {id:"productos", label:"Productos y servicios", ready:false},
-    {id:"metas", label:"Metas y forecast", ready:false},
-  ]},
-  {group:"Automatización", items:[
-    {id:"workflows", label:"Workflows y reglas", ready:false},
-  ]},
-  {group:"Analítica y reportes", items:[
-    {id:"analitica", label:"Analítica comercial", ready:false},
-    {id:"reportes", label:"Reportes y exportación", ready:false},
-  ]},
-  {group:"Administración", items:[
-    {id:"admin", label:"Usuarios, roles y auditoría", ready:false},
   ]},
 ];
 
@@ -560,7 +543,7 @@ function viewSoon(label){
 
 /* --------------------------- DASHBOARD --------------------------- */
 function viewDashboard(){
-  const leads = DB.leads.filter(l=>l.estado!=="convertido" && l.estado!=="perdido");
+  const leads = DB.leads.filter(l=>l.estado!=="convertido" && l.estado!=="perdido" && l.estado!=="descartado");
   const nuevos = DB.leads.filter(l=> daysAgo(l.fechaIngreso)<=1).length;
   const calientes = DB.leads.filter(l=>{
     const lab = scoreLabel(l.puntuacion).etiqueta;
@@ -592,8 +575,8 @@ function viewDashboard(){
   });
   const totalEnFunnel = etapasResumen.reduce((a,e)=>a+e.cantidad,0)||1;
 
-  const tareasPendientes = DB.actividades.filter(a=>a.estado==="pendiente"||a.estado==="vencida");
-  const cotizacionesActivas = 3; // demo estático — módulo cotizaciones pendiente
+  const tareasPendientes = DB.actividades.filter(a=>a.estado==="pendiente").sort((a,b)=> new Date(a.fecha)-new Date(b.fecha));
+  const tareasVencidas = tareasPendientes.filter(tareaVencida);
 
   return `
   <div class="section-title">Indicadores clave</div>
@@ -638,7 +621,7 @@ function viewDashboard(){
       <div class="value">${clientesRiesgo}</div>
       <div class="insight ${clientesRiesgo? 'risk':'good'}">${clientesRiesgo? 'Requieren seguimiento' : 'Sin alertas activas'}</div>
     </div>
-    <div class="card kpi">
+    <div class="card kpi clickable" data-goto="oportunidades">
       <div class="label">Cumplimiento de meta</div>
       <div class="value">${cumplMeta}%</div>
       <div class="insight ${cumplMeta<60?'warn':'good'}">Meta mensual: ${fmtMoney(metaMensual)}</div>
@@ -649,7 +632,7 @@ function viewDashboard(){
   <div class="card card-pad">
     <div style="display:flex;gap:6px;align-items:stretch;overflow-x:auto;">
       ${etapasResumen.map((e,i)=>`
-        <div style="flex:1;min-width:120px;text-align:center;position:relative;">
+        <div class="clickable" data-goto="pipeline" style="flex:1;min-width:120px;text-align:center;position:relative;">
           <div style="background:${i<2?'var(--info-soft)': i<4?'var(--amber-soft)':'var(--accent-soft)'};border-radius:8px;padding:12px 8px;">
             <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:4px;">${ETAPA_LABEL[e.etapa]}</div>
             <div style="font-family:'Sora';font-weight:700;font-size:18px;">${e.cantidad}</div>
@@ -669,15 +652,19 @@ function viewDashboard(){
         ${calientesSinContactar? `<div class="alert-row"><span class="txt"><b>${calientesSinContactar}</b> prospectos calientes sin contactar</span><button class="btn btn-sm" data-goto="leads">Ver</button></div>`:""}
         ${estancadas.length? `<div class="alert-row"><span class="txt"><b>${estancadas.length}</b> oportunidades estancadas · ${fmtMoney(valorEstancado)}</span><button class="btn btn-sm" data-goto="pipeline">Ver</button></div>`:""}
         ${clientesRiesgo? `<div class="alert-row"><span class="txt"><b>${clientesRiesgo}</b> clientes en riesgo alto</span><button class="btn btn-sm" data-goto="riesgo">Ver</button></div>`:""}
-        <div class="alert-row"><span class="txt"><b>2</b> cotizaciones próximas a vencer</span><span class="soon-badge">Próximamente</span></div>
-        ${cumplMeta<60? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><span></span></div>`:""}
+        ${tareasVencidas.length? `<div class="alert-row"><span class="txt">⏰ <b>${tareasVencidas.length}</b> tarea(s) vencida(s)</span><button class="btn btn-sm" data-goto="alertas">Ver</button></div>`:""}
+        ${cumplMeta<60? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><button class="btn btn-sm" data-goto="oportunidades">Ver</button></div>`:""}
+        ${!calientesSinContactar && !estancadas.length && !clientesRiesgo && !tareasVencidas.length && cumplMeta>=60? `<div class="empty" style="padding:12px 0;">Sin alertas activas ahora mismo.</div>`:""}
       </div>
     </div>
     <div>
-      <div class="section-title">Tareas pendientes</div>
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Tareas pendientes</span>
+        <button class="btn btn-sm" id="btnNuevaTareaDash">+ Nueva tarea</button>
+      </div>
       <div class="card card-pad">
         ${tareasPendientes.length? tareasPendientes.map(t=>`
-          <div class="alert-row"><span class="txt">${t.estado==='vencida'?'⏰ ':'• '}${t.titulo}<br><span style="color:var(--muted);font-size:11.5px;">${vendedorNombre(t.vendedorId)} · ${fmtDate(t.fecha)}</span></span></div>
+          <div class="alert-row clickable" data-tarea="${t.id}"><span class="txt">${tareaVencida(t)?'⏰ ':'• '}${t.titulo}<br><span style="color:var(--muted);font-size:11.5px;">${vendedorNombre(t.vendedorId)} · ${fmtDate(t.fecha)}${tareaVencida(t)?' · <b style="color:var(--red);">vencida</b>':''}</span></span><span style="color:var(--muted);font-size:16px;">›</span></div>
         `).join("") : `<div class="empty" style="padding:16px;">Sin tareas pendientes.</div>`}
       </div>
     </div>
@@ -689,24 +676,54 @@ function viewDashboard(){
 function viewAlertas(){
   const rows = DB.actividades.slice().sort((a,b)=> new Date(a.fecha)-new Date(b.fecha));
   return `
+  <div class="toolbar">
+    <div style="color:var(--muted);font-size:12.5px;">${rows.filter(a=>a.estado==="pendiente").length} pendientes · ${rows.filter(tareaVencida).length} vencidas</div>
+    <button class="btn btn-primary" id="btnNuevaTarea">+ Nueva tarea</button>
+  </div>
   <div class="card">
     <div class="table-wrap">
     <table>
       <thead><tr><th>Tipo</th><th>Actividad</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr></thead>
       <tbody>
-        ${rows.map(a=>`
-        <tr>
+        ${rows.length? rows.map(a=>`
+        <tr class="rowlink" data-tarea="${a.id}">
           <td data-label="Tipo">${a.tipo}</td>
           <td data-label="Actividad">${a.titulo}</td>
           <td data-label="Responsable">${vendedorNombre(a.vendedorId)}</td>
           <td data-label="Fecha">${fmtDate(a.fecha)}</td>
-          <td data-label="Estado"><span class="badge ${a.estado==='vencida'?'badge-perdido':'badge-nuevo'}">${a.estado}</span></td>
-        </tr>`).join("")}
+          <td data-label="Estado"><span class="badge ${a.estado==='completada'?'badge-convertido':tareaVencida(a)?'badge-perdido':'badge-nuevo'}">${a.estado==='completada'?'completada':tareaVencida(a)?'vencida':'pendiente'}</span></td>
+        </tr>`).join("") : `<tr><td colspan="5"><div class="empty">Sin tareas registradas. Usa "+ Nueva tarea" para crear una.</div></td></tr>`}
       </tbody>
     </table>
     </div>
   </div>`;
 }
+
+/* --------------------------- FORMULARIO DE TAREA (nueva / editar / completar) --------------------------- */
+function tareaForm(tareaId){
+  const t = tareaId? DB.actividades.find(x=>x.id===tareaId) : {tipo:"tarea", titulo:"", fecha: todayISO().slice(0,16), estado:"pendiente", vendedorId:VENDEDORES[0].id};
+  const fechaInput = t.fecha ? new Date(t.fecha).toISOString().slice(0,16) : "";
+  return `
+  <div class="modal-head"><h3>${tareaId? "Editar tarea":"Nueva tarea"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    ${tareaId && tareaVencida(t)? `<div class="card card-pad" style="margin-bottom:12px;background:var(--red-soft);border-color:#F1C9BE;"><b>⏰ Esta tarea está vencida</b></div>`:""}
+    <div class="form-grid">
+      <div class="field"><label>Tipo</label><select id="ta_tipo">${["tarea","llamada","seguimiento","reunion"].map(ty=>`<option ${ty===t.tipo?'selected':''}>${ty}</option>`).join("")}</select></div>
+      <div class="field"><label>Responsable</label><select id="ta_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===t.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field" style="grid-column:1/-1;"><label>Descripción</label><input id="ta_titulo" value="${t.titulo}" placeholder="Ej: Llamar a Restaurante La Marina para dar seguimiento"></div>
+      <div class="field"><label>Fecha y hora</label><input type="datetime-local" id="ta_fecha" value="${fechaInput}"></div>
+      <div class="field"><label>Estado</label><select id="ta_estado">${["pendiente","completada"].map(e=>`<option ${e===t.estado?'selected':''}>${e}</option>`).join("")}</select></div>
+    </div>
+  </div>
+  <div class="modal-foot" style="flex-wrap:wrap;">
+    <button class="btn" data-close>Cancelar</button>
+    ${tareaId? `<button class="btn" id="btnEliminarTarea" data-id="${tareaId}" style="border-color:var(--red);color:var(--red);">Eliminar</button>`:""}
+    ${tareaId && t.estado==="pendiente"? `<button class="btn" id="btnCompletarTarea" data-id="${tareaId}" style="border-color:var(--accent);color:var(--accent);">✓ Marcar completada</button>`:""}
+    <button class="btn btn-primary" id="saveTarea" data-id="${tareaId||''}">${tareaId? "Guardar cambios":"Crear tarea"}</button>
+  </div>`;
+}
+
+
 
 /* --------------------------- LEADS --------------------------- */
 let leadFilters = {estado:"", prioridad:"", q:""};
@@ -827,7 +844,7 @@ function leadForm(lead){
       <div class="field"><label>Nicho de negocio</label><select id="f_nicho">${NICHOS.map(n=>`<option ${n===l.nicho?'selected':''}>${n}</option>`).join("")}</select></div>
       <div class="field"><label>Fuente</label><select id="f_fuente">${FUENTES.map(f=>`<option ${f===l.fuente?'selected':''}>${f}</option>`).join("")}</select></div>
       <div class="field"><label>Vendedor asignado</label><select id="f_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
-      <div class="field"><label>Producto de interés</label><input id="f_producto" value="${l.productoInteres}"></div>
+      <div class="field"><label>Servicio de interés / plan</label><input id="f_producto" value="${l.productoInteres}" placeholder="Ej: Agente IA WhatsApp — Setup + mensualidad"></div>
       <div class="field"><label>Presupuesto informado ($)</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
       <div class="field"><label>Prioridad</label><select id="f_prioridad">${["baja","media","alta","critica"].map(p=>`<option ${p===l.prioridad?'selected':''}>${p}</option>`).join("")}</select></div>
       <div class="field" style="grid-column:1/-1;"><label>Falencia detectada en su servicio actual (qué mejoraría con nuestro agente de IA)</label><textarea id="f_falencia" rows="3" placeholder="Ej: pierde reservas fuera de horario, no responde WhatsApp a tiempo, no automatiza confirmaciones...">${l.falencia||""}</textarea></div>
@@ -1066,18 +1083,23 @@ function viewScoring(){
 }
 
 /* --------------------------- CLIENTES --------------------------- */
+let clienteFilterQ = "";
 function viewClientes(){
+  const rows = DB.clientes.filter(c=>{
+    if(!clienteFilterQ) return true;
+    return `${c.nombre} ${c.segmento}`.toLowerCase().includes(clienteFilterQ.toLowerCase());
+  });
   return `
   <div class="toolbar">
-    <div class="search-box"><input type="text" placeholder="Buscar cliente..."></div>
-    <button class="btn btn-primary" disabled title="Los clientes se crean convirtiendo un prospecto">+ Nuevo cliente</button>
+    <div class="search-box"><input type="text" id="clienteSearch" placeholder="Buscar cliente..." value="${clienteFilterQ}"></div>
+    <button class="btn btn-primary" id="btnNuevoCliente">+ Nuevo cliente</button>
   </div>
   <div class="card">
     <div class="table-wrap">
     <table>
       <thead><tr><th>Cliente</th><th>Segmento</th><th>Vendedor</th><th>Valor total</th><th>Ticket prom.</th><th>Última compra</th><th>Riesgo</th></tr></thead>
       <tbody>
-        ${DB.clientes.map(c=>`
+        ${rows.length? rows.map(c=>`
         <tr class="rowlink" data-cliente="${c.id}">
           <td data-label="Cliente"><b>${c.nombre}</b></td>
           <td data-label="Segmento">${c.segmento}</td>
@@ -1086,19 +1108,38 @@ function viewClientes(){
           <td data-label="Ticket prom." class="mono">${fmtMoney(c.ticketPromedio)}</td>
           <td data-label="Última compra">${fmtDate(c.ultimaCompra)} <span style="color:var(--muted);font-size:11px;">(${daysAgo(c.ultimaCompra)}d)</span></td>
           <td data-label="Riesgo"><span class="badge badge-${c.riesgo==='alto'?'critica':c.riesgo==='medio'?'alta':'calificado'}">${c.riesgo}</span></td>
-        </tr>`).join("")}
+        </tr>`).join("") : `<tr><td colspan="7"><div class="empty">Ningún cliente coincide con la búsqueda.</div></td></tr>`}
       </tbody>
     </table>
     </div>
   </div>`;
 }
 
+/* --------------------------- FORMULARIO CLIENTE (nuevo o edición) --------------------------- */
+function clienteForm(cliente){
+  const c = cliente || {nombre:"",empresaId:"",segmento:"PyME",vendedorId:VENDEDORES[0].id,riesgo:"bajo",valorTotal:0,ticketPromedio:0,compras:0,ultimaCompra:todayISO()};
+  return `
+  <div class="modal-head"><h3>${cliente? "Editar cliente":"Nuevo cliente"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="field"><label>Nombre / Empresa</label><input id="cl_nombre" value="${c.nombre}"></div>
+      <div class="field"><label>Empresa vinculada</label><select id="cl_empresa"><option value="">— Sin vincular —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===c.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Segmento</label><select id="cl_segmento">${["Nuevo","PyME","Corporativo"].map(s=>`<option ${s===c.segmento?'selected':''}>${s}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor responsable</label><select id="cl_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===c.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Nivel de riesgo</label><select id="cl_riesgo">${["bajo","medio","alto"].map(r=>`<option ${r===c.riesgo?'selected':''}>${r}</option>`).join("")}</select></div>
+      <div class="field"><label>Valor total acumulado ($)</label><input type="number" id="cl_valor" value="${c.valorTotal}"></div>
+      <div class="field"><label>Ticket promedio ($)</label><input type="number" id="cl_ticket" value="${c.ticketPromedio}"></div>
+      <div class="field"><label>N.º de compras / renovaciones</label><input type="number" id="cl_compras" value="${c.compras}"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="saveCliente" data-id="${cliente? cliente.id:''}">${cliente? "Guardar cambios":"Crear cliente"}</button>
+  </div>`;
+}
+
 function clientePerfil(c){
-  const acts = [
-    {fecha:c.ultimaCompra, titulo:"Última compra registrada"},
-    {fecha:new Date(Date.now()-14*86400000).toISOString(), titulo:"Reunión comercial de seguimiento"},
-    {fecha:c.fechaConversion, titulo:"Lead convertido a cliente"},
-  ];
+  const notas = (c.notasSeguimiento||[]).slice().sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
   return `
   <div class="modal-head"><h3>${c.nombre}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -1107,12 +1148,33 @@ function clientePerfil(c){
       <div class="card kpi"><div class="label">Compras</div><div class="value" style="font-size:19px;">${c.compras}</div></div>
       <div class="card kpi"><div class="label">Días sin comprar</div><div class="value" style="font-size:19px;">${daysAgo(c.ultimaCompra)}</div></div>
     </div>
-    <div class="section-title">Historial</div>
+
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Seguimiento de progreso</span>
+      <button class="btn btn-sm" id="btnAgregarNota" data-id="${c.id}">+ Agregar nota</button>
+    </div>
+    <div id="notaQuickAdd" style="display:none;margin-bottom:10px;">
+      <textarea id="cl_notatxt" rows="2" placeholder="Ej: se envió propuesta de renovación, cliente pidió ajustar alcance..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn btn-sm btn-primary" id="btnGuardarNota" data-id="${c.id}">Guardar nota</button>
+        <button class="btn btn-sm" id="btnCancelarNota">Cancelar</button>
+      </div>
+    </div>
+    <div class="timeline" style="margin-bottom:18px;">
+      ${notas.length? notas.map(n=>`<div class="tl-item"><div class="tl-date">${fmtDate(n.fecha)} · ${vendedorNombre(n.vendedorId)}</div><div class="tl-title">${n.texto}</div></div>`).join("")
+        : `<div class="empty" style="padding:10px 0;">Aún no hay notas de seguimiento. Usa "+ Agregar nota" para registrar el progreso de este cliente.</div>`}
+    </div>
+
+    <div class="section-title">Historial comercial</div>
     <div class="timeline">
-      ${acts.map(a=>`<div class="tl-item"><div class="tl-date">${fmtDate(a.fecha)}</div><div class="tl-title">${a.titulo}</div></div>`).join("")}
+      <div class="tl-item"><div class="tl-date">${fmtDate(c.ultimaCompra)}</div><div class="tl-title">Última compra / renovación registrada</div></div>
+      <div class="tl-item"><div class="tl-date">${fmtDate(c.fechaConversion)}</div><div class="tl-title">Prospecto convertido a cliente</div></div>
     </div>
   </div>
-  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+  <div class="modal-foot">
+    <button class="btn" data-close>Cerrar</button>
+    <button class="btn btn-primary" id="btnEditarCliente" data-id="${c.id}">Editar cliente</button>
+  </div>`;
 }
 
 /* --------------------------- RIESGO --------------------------- */
@@ -1318,6 +1380,15 @@ function bindViewEvents(){
     el.addEventListener("click", ()=> goTo(el.dataset.goto));
   });
 
+  // Tareas / actividades clicables (Dashboard y Alertas y tareas)
+  document.querySelectorAll("[data-tarea]").forEach(row=>{
+    row.addEventListener("click", ()=> openModal(tareaForm(row.dataset.tarea)));
+  });
+  const btnNuevaTareaDash = document.getElementById("btnNuevaTareaDash");
+  if(btnNuevaTareaDash) btnNuevaTareaDash.addEventListener("click", ()=> openModal(tareaForm()));
+  const btnNuevaTarea = document.getElementById("btnNuevaTarea");
+  if(btnNuevaTarea) btnNuevaTarea.addEventListener("click", ()=> openModal(tareaForm()));
+
   // Filas de prospecto clicables en cualquier vista (Prospectos, Mapa global)
   document.querySelectorAll("[data-lead]").forEach(row=>{
     row.addEventListener("click", e=>{
@@ -1387,6 +1458,14 @@ function bindViewEvents(){
       openModal(clientePerfil(c));
     });
   });
+  const clienteSearch = document.getElementById("clienteSearch");
+  if(clienteSearch) clienteSearch.addEventListener("input", e=>{
+    clienteFilterQ = e.target.value;
+    document.getElementById("content").innerHTML = viewClientes();
+    bindViewEvents();
+  });
+  const btnNuevoCliente = document.getElementById("btnNuevoCliente");
+  if(btnNuevoCliente) btnNuevoCliente.addEventListener("click", ()=> openModal(clienteForm()));
 
   // EMPRESAS
   document.querySelectorAll("[data-empresa]").forEach(row=>{
@@ -1439,6 +1518,104 @@ function bindViewEvents(){
 ============================================================================ */
 function bindModalEvents(){
   document.querySelectorAll("#modalBox [data-close]").forEach(b=> b.addEventListener("click", closeModal));
+
+  // Guardar tarea (nueva o edición), completar, eliminar
+  const saveTareaBtn = document.getElementById("saveTarea");
+  if(saveTareaBtn){
+    saveTareaBtn.addEventListener("click", ()=>{
+      const titulo = document.getElementById("ta_titulo").value.trim();
+      const fechaVal = document.getElementById("ta_fecha").value;
+      if(!titulo){ toast("Escribe una descripción para la tarea", true); return; }
+      if(!fechaVal){ toast("Selecciona fecha y hora", true); return; }
+      const id = saveTareaBtn.dataset.id;
+      const data = {
+        tipo: document.getElementById("ta_tipo").value,
+        titulo,
+        fecha: new Date(fechaVal).toISOString(),
+        estado: document.getElementById("ta_estado").value,
+        vendedorId: document.getElementById("ta_vendedor").value,
+      };
+      if(id){
+        Object.assign(DB.actividades.find(a=>a.id===id), data);
+        toast("Tarea actualizada");
+      }else{
+        DB.actividades.unshift({...data, id:uid()});
+        toast("Tarea creada");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
+  const btnCompletarTarea = document.getElementById("btnCompletarTarea");
+  if(btnCompletarTarea) btnCompletarTarea.addEventListener("click", ()=>{
+    const a = DB.actividades.find(x=>x.id===btnCompletarTarea.dataset.id);
+    if(!a) return;
+    a.estado = "completada";
+    save(); toast("Tarea marcada como completada"); closeModal(); renderView();
+  });
+  const btnEliminarTarea = document.getElementById("btnEliminarTarea");
+  if(btnEliminarTarea) btnEliminarTarea.addEventListener("click", ()=>{
+    DB.actividades = DB.actividades.filter(x=>x.id!==btnEliminarTarea.dataset.id);
+    save(); toast("Tarea eliminada"); closeModal(); renderView();
+  });
+
+  // Guardar cliente (nuevo o edición)
+  const saveClienteBtn = document.getElementById("saveCliente");
+  if(saveClienteBtn){
+    saveClienteBtn.addEventListener("click", ()=>{
+      const nombre = document.getElementById("cl_nombre").value.trim();
+      if(!nombre){ toast("El nombre es obligatorio", true); return; }
+      const id = saveClienteBtn.dataset.id;
+      const data = {
+        nombre,
+        empresaId: document.getElementById("cl_empresa").value || null,
+        segmento: document.getElementById("cl_segmento").value,
+        vendedorId: document.getElementById("cl_vendedor").value,
+        riesgo: document.getElementById("cl_riesgo").value,
+        valorTotal: Number(document.getElementById("cl_valor").value)||0,
+        ticketPromedio: Number(document.getElementById("cl_ticket").value)||0,
+        compras: Number(document.getElementById("cl_compras").value)||0,
+      };
+      if(id){
+        Object.assign(DB.clientes.find(c=>c.id===id), data);
+        toast("Cliente actualizado");
+      }else{
+        DB.clientes.push({...data, id:uid(), ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]});
+        toast("Cliente creado");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
+
+  // Abrir edición de cliente desde su perfil
+  const btnEditarCliente = document.getElementById("btnEditarCliente");
+  if(btnEditarCliente) btnEditarCliente.addEventListener("click", ()=>{
+    const c = DB.clientes.find(x=>x.id===btnEditarCliente.dataset.id);
+    if(c) openModal(clienteForm(c));
+  });
+
+  // Nota de seguimiento de progreso (dentro del perfil de cliente)
+  const btnAgregarNota = document.getElementById("btnAgregarNota");
+  if(btnAgregarNota) btnAgregarNota.addEventListener("click", ()=>{
+    document.getElementById("notaQuickAdd").style.display = "block";
+    btnAgregarNota.style.display = "none";
+  });
+  const btnCancelarNota = document.getElementById("btnCancelarNota");
+  if(btnCancelarNota) btnCancelarNota.addEventListener("click", ()=>{
+    document.getElementById("notaQuickAdd").style.display = "none";
+    if(btnAgregarNota) btnAgregarNota.style.display = "inline-block";
+  });
+  const btnGuardarNota = document.getElementById("btnGuardarNota");
+  if(btnGuardarNota) btnGuardarNota.addEventListener("click", ()=>{
+    const texto = document.getElementById("cl_notatxt").value.trim();
+    if(!texto){ toast("Escribe una nota antes de guardar", true); return; }
+    const c = DB.clientes.find(x=>x.id===btnGuardarNota.dataset.id);
+    if(!c) return;
+    if(!c.notasSeguimiento) c.notasSeguimiento = [];
+    c.notasSeguimiento.push({fecha: todayISO(), texto, vendedorId: c.vendedorId});
+    save();
+    toast("Nota de seguimiento guardada");
+    openModal(clientePerfil(c));
+  });
 
   // Descartar prospecto (abre modal de motivo)
   const btnDescartar = document.getElementById("btnDescartar");
@@ -1675,6 +1852,18 @@ document.getElementById("overlay").addEventListener("click", ()=>{
 
 renderNav();
 renderView();
+
+/* Refresco en tiempo real: recalcula el Dashboard y Alertas cada 20s (tareas que vencen,
+   cambios hechos en otras vistas) sin interrumpir al usuario si hay un modal abierto o
+   está escribiendo en un formulario. */
+setInterval(()=>{
+  const modalAbierto = document.getElementById("modalBg").classList.contains("active");
+  if(modalAbierto) return;
+  if(currentView==="dashboard" || currentView==="alertas"){
+    renderView();
+  }
+}, 20000);
+
 </script>
 </body>
 </html>
