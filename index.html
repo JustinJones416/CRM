@@ -117,6 +117,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .badge-seguimiento{background:var(--amber-soft);color:var(--amber);}
 .badge-convertido{background:#E1F5EA;color:#1E8449;}
 .badge-perdido{background:var(--red-soft);color:var(--red);}
+.badge-descartado{background:#F1F1F4;color:#8388A3;text-decoration:line-through;}
 .badge-baja{background:#F1F1F4;color:var(--muted);}
 .badge-media{background:var(--info-soft);color:var(--info);}
 .badge-alta{background:var(--amber-soft);color:var(--amber);}
@@ -329,6 +330,16 @@ function estadoAgenteBadge(estado){
   const map = {"No implementado":"perdido","Setup en curso":"alta","En prueba con el cliente":"media","Activo 24/7":"convertido","Pausado":"critica"};
   return map[estado] || "nuevo";
 }
+
+/* ---------------------------- DESCARTE DE PROSPECTOS ---------------------------- */
+const MOTIVOS_DESCARTE = [
+  "No es relevante para nuestro servicio",
+  "Ya no está en esa posición / cambió de empresa",
+  "Presupuesto insuficiente",
+  "No respondió tras varios intentos",
+  "Ya tiene un servicio similar contratado",
+  "Otro",
+];
 const PRODUCTOS_SEED = [
   {id:"p1", nombre:"Plan Corporativo Anual", categoria:"Software", precio:4200},
   {id:"p2", nombre:"Consultoría de Implementación", categoria:"Servicio", precio:1800},
@@ -702,6 +713,7 @@ let leadFilters = {estado:"", prioridad:"", q:""};
 
 function viewLeads(){
   const rows = DB.leads.filter(l=>{
+    if(!leadFilters.estado && l.estado==="descartado") return false; // ocultos del listado activo por defecto
     if(leadFilters.estado && l.estado!==leadFilters.estado) return false;
     if(leadFilters.prioridad && l.prioridad!==leadFilters.prioridad) return false;
     if(leadFilters.q){
@@ -717,7 +729,7 @@ function viewLeads(){
       <div class="search-box"><input type="text" id="leadSearch" placeholder="Buscar prospecto o empresa..." value="${leadFilters.q}"></div>
       <select id="fEstado">
         <option value="">Todos los estados</option>
-        ${["nuevo","contactado","calificado","no_calificado","en_seguimiento","convertido","perdido"].map(s=>`<option value="${s}" ${leadFilters.estado===s?'selected':''}>${s.replace('_',' ')}</option>`).join("")}
+        ${["nuevo","contactado","calificado","no_calificado","en_seguimiento","convertido","perdido","descartado"].map(s=>`<option value="${s}" ${leadFilters.estado===s?'selected':''}>${s.replace('_',' ')}</option>`).join("")}
       </select>
       <select id="fPrioridad">
         <option value="">Toda prioridad</option>
@@ -793,9 +805,15 @@ function googleCaptureForm(){
 function leadForm(lead){
   const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:VENDEDORES[0].id,prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
   const enc = calcularEncaje(l);
+  const descartado = lead && l.estado==="descartado";
   return `
   <div class="modal-head"><h3>${lead? "Editar prospecto":"Nuevo prospecto"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
+    ${descartado? `
+    <div class="card card-pad" style="margin-bottom:14px;background:#F1F1F4;border-color:#DADCE3;">
+      <b>🗑 Prospecto descartado</b>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Motivo: ${l.motivoDescarte||"—"}</div>
+    </div>` : ""}
     <div class="form-grid">
       <div class="field"><label>Nombre</label><input id="f_nombre" value="${l.nombre}"></div>
       <div class="field"><label>Apellido</label><input id="f_apellido" value="${l.apellido}"></div>
@@ -819,11 +837,62 @@ function leadForm(lead){
       <div id="f_encaje_razones" style="font-size:12px;color:var(--muted);margin-top:4px;">${enc.razones.join(" · ")||"Completa los campos para calcular el encaje."}</div>
     </div>
   </div>
-  <div class="modal-foot">
+  <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cancelar</button>
+    ${lead? `<button class="btn" id="btnAgendar" data-id="${l.id}" style="border-color:var(--info);color:var(--info);">📅 Agendar reunión</button>` : ""}
+    ${lead? (descartado
+      ? `<button class="btn" id="btnReactivar" data-id="${l.id}">↩ Reactivar prospecto</button>`
+      : `<button class="btn" id="btnDescartar" data-id="${l.id}" style="border-color:var(--red);color:var(--red);">🗑 Descartar</button>`) : ""}
     <button class="btn btn-primary" id="saveLead" data-id="${lead? lead.id:''}">Guardar prospecto</button>
   </div>`;
 }
+
+/* --------------------------- DESCARTAR PROSPECTO --------------------------- */
+function descarteForm(leadId){
+  const l = DB.leads.find(x=>x.id===leadId);
+  return `
+  <div class="modal-head"><h3>Descartar prospecto</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:13px;margin-top:0;">Se marcará <b>${l.nombre} ${l.apellido}</b> (${l.empresaNombre||'sin empresa'}) como descartado. Queda fuera del pipeline activo pero conserva su historial y se puede reactivar en cualquier momento.</p>
+    <div class="field">
+      <label>Motivo del descarte</label>
+      <select id="desc_motivo">${MOTIVOS_DESCARTE.map(m=>`<option>${m}</option>`).join("")}</select>
+    </div>
+    <div class="field" style="margin-top:10px;">
+      <label>Nota adicional (opcional)</label>
+      <textarea id="desc_nota" rows="2" placeholder="Ej: habló con recepción y confirmaron que ya no trabaja ahí"></textarea>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="confirmDescarte" data-id="${leadId}" style="background:var(--red);border-color:var(--red);">Confirmar descarte</button>
+  </div>`;
+}
+
+/* --------------------------- AGENDAR REUNIÓN (booking) --------------------------- */
+function agendarForm(leadId){
+  const l = DB.leads.find(x=>x.id===leadId);
+  const p = paisInfo(l.pais);
+  const hoy = new Date().toISOString().slice(0,10);
+  return `
+  <div class="modal-head"><h3>📅 Agendar reunión</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:13px;margin-top:0;">Reservando horario con <b>${l.nombre} ${l.apellido}</b> — ${l.empresaNombre||'sin empresa'}${p? ` (${p.flag} ${l.pais})`:''}.</p>
+    <div class="form-grid">
+      <div class="field"><label>Fecha</label><input type="date" id="ag_fecha" value="${hoy}"></div>
+      <div class="field"><label>Hora (nuestra zona — Panamá)</label><input type="time" id="ag_hora" value="10:00"></div>
+      <div class="field"><label>Responsable</label><select id="ag_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Hora equivalente del cliente</label><input id="ag_horacliente" disabled></div>
+      <div class="field" style="grid-column:1/-1;"><label>Motivo / agenda de la reunión</label><input id="ag_motivo" value="Llamada de cierre — ${l.empresaNombre||l.nombre}"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="confirmAgendar" data-lead="${leadId}">Confirmar reunión</button>
+  </div>`;
+}
+
+
 
 /* --------------------------- MAPA GLOBAL DE PROSPECTOS --------------------------- */
 function viewMapaGlobal(){
@@ -1370,6 +1439,89 @@ function bindViewEvents(){
 ============================================================================ */
 function bindModalEvents(){
   document.querySelectorAll("#modalBox [data-close]").forEach(b=> b.addEventListener("click", closeModal));
+
+  // Descartar prospecto (abre modal de motivo)
+  const btnDescartar = document.getElementById("btnDescartar");
+  if(btnDescartar) btnDescartar.addEventListener("click", ()=> openModal(descarteForm(btnDescartar.dataset.id)));
+
+  const confirmDescarte = document.getElementById("confirmDescarte");
+  if(confirmDescarte){
+    confirmDescarte.addEventListener("click", ()=>{
+      const l = DB.leads.find(x=>x.id===confirmDescarte.dataset.id);
+      if(!l) return;
+      const motivo = document.getElementById("desc_motivo").value;
+      const nota = document.getElementById("desc_nota").value;
+      l.estado = "descartado";
+      l.motivoDescarte = nota? `${motivo} — ${nota}` : motivo;
+      save();
+      toast(`${l.nombre} ${l.apellido} descartado`);
+      closeModal(); renderView();
+    });
+  }
+
+  // Reactivar prospecto descartado
+  const btnReactivar = document.getElementById("btnReactivar");
+  if(btnReactivar){
+    btnReactivar.addEventListener("click", ()=>{
+      const l = DB.leads.find(x=>x.id===btnReactivar.dataset.id);
+      if(!l) return;
+      l.estado = "nuevo";
+      l.motivoDescarte = "";
+      save();
+      toast(`${l.nombre} ${l.apellido} reactivado`);
+      closeModal(); renderView();
+    });
+  }
+
+  // Agendar reunión (booking) — abre formulario con hora del cliente
+  const btnAgendar = document.getElementById("btnAgendar");
+  if(btnAgendar) btnAgendar.addEventListener("click", ()=> openModal(agendarForm(btnAgendar.dataset.id)));
+
+  const confirmAgendar = document.getElementById("confirmAgendar");
+  if(confirmAgendar){
+    // Calcular en vivo la hora equivalente del cliente según la hora elegida en Panamá
+    const calcHoraCliente = ()=>{
+      const leadId = confirmAgendar.dataset.lead;
+      const l = DB.leads.find(x=>x.id===leadId);
+      const p = l? paisInfo(l.pais) : null;
+      const fecha = document.getElementById("ag_fecha").value;
+      const hora = document.getElementById("ag_hora").value;
+      const out = document.getElementById("ag_horacliente");
+      if(!p || !fecha || !hora || !out) return;
+      try{
+        const diff = diferenciaHoras(l.pais);
+        const [hh,mm] = hora.split(":").map(Number);
+        const base = new Date(`${fecha}T${hora}:00`);
+        const clienteDate = new Date(base.getTime() + (diff||0)*3600000);
+        out.value = `${clienteDate.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})} (${p.flag} ${l.pais})`;
+      }catch(e){ out.value = "—"; }
+    };
+    ["ag_fecha","ag_hora"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener("input", calcHoraCliente);
+    });
+    calcHoraCliente();
+
+    confirmAgendar.addEventListener("click", ()=>{
+      const leadId = confirmAgendar.dataset.lead;
+      const l = DB.leads.find(x=>x.id===leadId);
+      if(!l) return;
+      const fecha = document.getElementById("ag_fecha").value;
+      const hora = document.getElementById("ag_hora").value;
+      const vendedorId = document.getElementById("ag_vendedor").value;
+      const motivo = document.getElementById("ag_motivo").value.trim() || `Reunión con ${l.nombre} ${l.apellido}`;
+      if(!fecha || !hora){ toast("Selecciona fecha y hora", true); return; }
+      const fechaISO = new Date(`${fecha}T${hora}:00`).toISOString();
+      DB.actividades.push({
+        id: uid(), tipo: "reunion", titulo: motivo, fecha: fechaISO,
+        estado: "pendiente", vendedorId, leadId: l.id,
+      });
+      l.estado = l.estado==="nuevo" ? "contactado" : l.estado;
+      save();
+      toast(`Reunión agendada con ${l.nombre} ${l.apellido} para el ${fmtDate(fechaISO)}`);
+      closeModal(); renderView();
+    });
+  }
 
   // Captación manual desde Google Business / reseñas / sin sitio web
   const saveGoogleBtn = document.getElementById("saveGoogleCapture");
