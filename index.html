@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexo CRM — Prototipo Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#12182B;
+  --ink2:#1B2340;
+  --paper:#F5F6F9;
+  --card:#FFFFFF;
+  --line:#E4E6EE;
+  --text:#1B2340;
+  --muted:#6B7080;
+  --accent:#0F8B7F;
+  --accent-soft:#E4F5F2;
+  --info:#4C5FD5;
+  --info-soft:#EBEDFB;
+  --amber:#B9791A;
+  --amber-soft:#FCF1DD;
+  --red:#C6432A;
+  --red-soft:#FBE8E3;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(18,24,43,.04), 0 4px 16px rgba(18,24,43,.05);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--text);font-size:14px;}
+h1,h2,h3,.display{font-family:'Sora',sans-serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit;cursor:pointer;}
+a{color:inherit;}
+
+/* ---------- SHELL ---------- */
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;}
+.sidebar{background:var(--ink);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
+.brand .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0B6259);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
+.brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;}
+.brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;}
+.navgroup{margin-bottom:4px;}
+.navgroup-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#666C87;padding:14px 12px 6px;}
+.navitem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;font-size:13.2px;color:#C6CBE0;text-decoration:none;margin-bottom:1px;}
+.navitem:hover{background:#1F2745;color:#fff;}
+.navitem.active{background:var(--accent);color:#fff;font-weight:600;}
+.navitem .tag{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;letter-spacing:.02em;}
+.navitem.active .tag{background:rgba(255,255,255,.2);color:#fff;}
+
+.main{min-width:0;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20;}
+.topbar h1{font-size:16px;margin:0;font-weight:700;}
+.topbar .right{display:flex;align-items:center;gap:14px;}
+.pill{font-size:11.5px;background:var(--info-soft);color:var(--info);padding:5px 10px;border-radius:20px;font-weight:600;}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:'Sora';}
+.menu-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;}
+
+.content{padding:22px;max-width:1400px;}
+.view{display:none;}
+.view.active{display:block;animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- COMMON ---------- */
+.grid{display:grid;gap:14px;}
+.cols-4{grid-template-columns:repeat(4,1fr);}
+.cols-3{grid-template-columns:repeat(3,1fr);}
+.cols-2{grid-template-columns:repeat(2,1fr);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card-pad{padding:16px 18px;}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:26px 0 10px;}
+.section-title:first-child{margin-top:0;}
+
+.kpi{padding:15px 16px;}
+.kpi .label{font-size:12px;color:var(--muted);font-weight:500;}
+.kpi .value{font-family:'Sora';font-size:26px;font-weight:700;margin:4px 0 6px;}
+.kpi .insight{font-size:12px;padding:5px 8px;border-radius:6px;display:inline-block;font-weight:600;}
+.kpi .insight.warn{background:var(--amber-soft);color:var(--amber);}
+.kpi .insight.risk{background:var(--red-soft);color:var(--red);}
+.kpi .insight.good{background:var(--accent-soft);color:var(--accent);}
+.kpi .insight.info{background:var(--info-soft);color:var(--info);}
+.kpi.clickable{cursor:pointer;transition:.15s;}
+.kpi.clickable:hover{border-color:var(--accent);transform:translateY(-1px);}
+
+.btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{border-color:#c7cade;}
+.btn-primary{background:var(--ink2);color:#fff;border-color:var(--ink2);}
+.btn-primary:hover{background:#0E1530;}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-ghost{background:none;border:none;color:var(--info);font-weight:600;}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar .filters{display:flex;gap:8px;flex-wrap:wrap;}
+input[type=text],input[type=search],input[type=number],input[type=date],input[type=email],input[type=tel],select,textarea{
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);
+}
+textarea{width:100%;resize:vertical;}
+.search-box{position:relative;}
+.search-box input{padding-left:30px;width:220px;}
+.search-box::before{content:"⌕";position:absolute;left:10px;top:7px;color:var(--muted);}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
+.table-wrap{overflow-x:auto;}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.badge-nuevo{background:var(--info-soft);color:var(--info);}
+.badge-contactado{background:#EFEFF7;color:#5B5FA8;}
+.badge-calificado{background:var(--accent-soft);color:var(--accent);}
+.badge-nocalificado{background:#F1F1F4;color:var(--muted);}
+.badge-seguimiento{background:var(--amber-soft);color:var(--amber);}
+.badge-convertido{background:#E1F5EA;color:#1E8449;}
+.badge-perdido{background:var(--red-soft);color:var(--red);}
+.badge-baja{background:#F1F1F4;color:var(--muted);}
+.badge-media{background:var(--info-soft);color:var(--info);}
+.badge-alta{background:var(--amber-soft);color:var(--amber);}
+.badge-critica{background:var(--red-soft);color:var(--red);}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;}
+
+.score-chip{font-family:'IBM Plex Mono';font-weight:600;font-size:12px;padding:2px 8px;border-radius:6px;}
+.score-frio{background:var(--info-soft);color:var(--info);}
+.score-tibio{background:var(--amber-soft);color:var(--amber);}
+.score-caliente{background:#FDE7DE;color:#C1531F;}
+.score-prioridad{background:var(--red-soft);color:var(--red);}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted);}
+.empty .big{font-size:28px;margin-bottom:8px;}
+.soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal-bg.active{display:flex;}
+.modal{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0;font-size:16px;}
+.modal-body{padding:18px 20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+.close-x{background:none;border:none;font-size:18px;color:var(--muted);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-grid .full{grid-column:1/-1;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;}
+
+/* toast */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--ink2);color:#fff;padding:11px 16px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;animation:slidein .2s ease;min-width:220px;}
+.toast.err{background:var(--red);}
+@keyframes slidein{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* kanban */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;}
+.kcol{min-width:250px;background:#EEF0F5;border-radius:10px;padding:10px;flex:0 0 250px;}
+.kcol-head{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 10px;}
+.kcol-head .t{font-weight:700;font-size:13px;}
+.kcol-head .n{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono';}
+.kcol-sum{font-size:11px;color:var(--muted);padding:0 4px 8px;font-family:'IBM Plex Mono';}
+.kcard{background:#fff;border-radius:8px;padding:10px 11px;margin-bottom:8px;box-shadow:0 1px 2px rgba(18,24,43,.06);border:1px solid var(--line);cursor:grab;}
+.kcard:active{cursor:grabbing;}
+.kcard.drag{opacity:.4;}
+.kcard .name{font-weight:600;font-size:13px;margin-bottom:3px;}
+.kcard .company{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+.kcard .foot{display:flex;justify-content:space-between;align-items:center;}
+.kcard .value{font-family:'IBM Plex Mono';font-weight:600;font-size:12.5px;}
+.kcard .days{font-size:10.5px;color:var(--muted);}
+.kcard .days.stale{color:var(--red);font-weight:600;}
+.kcol.dragover{outline:2px dashed var(--accent);outline-offset:-4px;}
+
+/* timeline */
+.timeline{border-left:2px solid var(--line);margin-left:6px;padding-left:18px;}
+.tl-item{position:relative;padding-bottom:18px;}
+.tl-item::before{content:"";position:absolute;left:-23px;top:3px;width:9px;height:9px;border-radius:50%;background:var(--accent);}
+.tl-date{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono';}
+.tl-title{font-weight:600;font-size:13.5px;}
+
+/* alert list */
+.alert-row{display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);}
+.alert-row:last-child{border-bottom:none;}
+.alert-row .txt{font-size:13px;}
+.alert-row .txt b{font-weight:700;}
+
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{position:fixed;left:-260px;top:0;width:236px;z-index:50;transition:.2s;box-shadow:8px 0 30px rgba(0,0,0,.2);}
+  .sidebar.open{left:0;}
+  .menu-btn{display:block;}
+  .cols-4,.cols-3,.cols-2{grid-template-columns:1fr;}
+  .form-grid{grid-template-columns:1fr;}
+  .content{padding:14px;}
+  table thead{display:none;}
+  table,tbody,tr,td{display:block;width:100%;}
+  tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px 0;background:#fff;}
+  td{border:none;padding:6px 14px;display:flex;justify-content:space-between;gap:10px;}
+  td::before{content:attr(data-label);font-size:11px;color:var(--muted);font-weight:600;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40;display:none;}
+  .overlay.active{display:block;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">N</div>
+      <div><div class="name">Nexo CRM</div><div class="sub">MODO PROTOTIPO · DATOS LOCALES</div></div>
+    </div>
+    <nav id="navroot"></nav>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="menu-btn" id="menuBtn">☰</button>
+        <h1 id="viewTitle">Dashboard</h1>
+      </div>
+      <div class="right">
+        <span class="pill">Rol: Gerente Comercial</span>
+        <div class="avatar">JR</div>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modalBox"></div>
+</div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ============================================================================
+   NEXO CRM — PROTOTIPO FUNCIONAL DE FRONTEND
+   ----------------------------------------------------------------------------
+   Persistencia: localStorage (clave "nexocrm_v1"), EXCLUSIVAMENTE como modo
+   demo mientras no exista un backend Supabase conectado. En producción esta
+   capa se reemplaza por services/ contra Supabase (ver docs/arquitectura.md).
+   Estructura interna organizada por "módulos" (aunque en un solo archivo) para
+   reflejar la arquitectura real: DATA / RULES / RENDER / EVENTS.
+============================================================================ */
+
+/* ---------------------------- DATA LAYER ---------------------------- */
+const STORAGE_KEY = "nexocrm_v1";
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function todayISO(){ return new Date().toISOString(); }
+function daysAgo(iso){ return Math.floor((Date.now()-new Date(iso).getTime())/86400000); }
+function fmtMoney(n){ return "$"+Number(n||0).toLocaleString("es-PA",{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso); return d.toLocaleDateString("es-PA",{day:"2-digit",month:"short"}); }
+
+const VENDEDORES = [
+  {id:"v1", nombre:"Julieta Ríos"},
+  {id:"v2", nombre:"Marco Ábrego"},
+  {id:"v3", nombre:"Diana Cede\u00f1o"},
+];
+const FUENTES = ["Referido","Google Ads","Meta Ads","Sitio web","Feria comercial","Llamada en frío"];
+const PRODUCTOS_SEED = [
+  {id:"p1", nombre:"Plan Corporativo Anual", categoria:"Software", precio:4200},
+  {id:"p2", nombre:"Consultoría de Implementación", categoria:"Servicio", precio:1800},
+  {id:"p3", nombre:"Licencia Starter", categoria:"Software", precio:650},
+  {id:"p4", nombre:"Soporte Premium", categoria:"Servicio", precio:900},
+];
+
+function seedData(){
+  const empresas = [
+    {id:"e1", nombre:"Ferretería del Istmo", industria:"Retail", pais:"Panamá", ciudad:"Ciudad de Panamá"},
+    {id:"e2", nombre:"Grupo Andino Textil", industria:"Manufactura", pais:"Panamá", ciudad:"Colón"},
+    {id:"e3", nombre:"Clínica San Rafael", industria:"Salud", pais:"Panamá", ciudad:"David"},
+  ];
+  const contactos = [
+    {id:"c1", empresaId:"e1", nombre:"Rodrigo", apellido:"Paz", cargo:"Gerente de Compras", email:"rpaz@ferreisto.com", telefono:"6600-1122", principal:true},
+    {id:"c2", empresaId:"e2", nombre:"Marlene", apellido:"Ju", cargo:"Directora Financiera", email:"mju@andinotextil.com", telefono:"6611-4433", principal:true},
+    {id:"c3", empresaId:"e3", nombre:"Dr. Iván", apellido:"Solís", cargo:"Administrador", email:"isolis@sanrafael.com", telefono:"6622-9988", principal:true},
+  ];
+  const now = Date.now();
+  const iso = (daysBack)=> new Date(now - daysBack*86400000).toISOString();
+  const leads = [
+    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Textiles Boquete",cargo:"Compradora",email:"camila@tboquete.com",telefono:"6644-1010",fuente:"Google Ads",productoInteres:"Plan Corporativo Anual",presupuesto:5000,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0)},
+    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Grupo Andino Textil",cargo:"Jefe de Planta",email:"eduarte@andinotextil.com",telefono:"6600-2020",fuente:"Referido",productoInteres:"Consultoría de Implementación",presupuesto:2000,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2)},
+    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"6611-3030",fuente:"Feria comercial",productoInteres:"Soporte Premium",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1)},
+    {id:uid(),nombre:"Luis",apellido:"Ferm\u00edn",empresaNombre:"Ferretería del Istmo",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"6622-4040",fuente:"Sitio web",productoInteres:"Licencia Starter",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0)},
+    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Comercial Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"6633-5050",fuente:"Llamada en frío",productoInteres:"Licencia Starter",presupuesto:600,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6)},
+    {id:uid(),nombre:"Tom\u00e1s",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"6644-6060",fuente:"Referido",productoInteres:"Plan Corporativo Anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9)},
+    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Grupo Andino Textil",cargo:"Compradora",email:"pgomez@andinotextil.com",telefono:"6655-7070",fuente:"Google Ads",productoInteres:"Soporte Premium",presupuesto:900,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0)},
+  ];
+  const clientes = [
+    {id:"cl1", nombre:"Ferretería del Istmo", empresaId:"e1", contactoId:"c1", segmento:"Corporativo", vendedorId:"v1", riesgo:"bajo", ultimaCompra:iso(12), valorTotal:18400, ticketPromedio:4600, compras:4, fechaConversion:iso(210)},
+    {id:"cl2", nombre:"Grupo Andino Textil", empresaId:"e2", contactoId:"c2", segmento:"Corporativo", vendedorId:"v2", riesgo:"alto", ultimaCompra:iso(97), valorTotal:6200, ticketPromedio:3100, compras:2, fechaConversion:iso(160)},
+    {id:"cl3", nombre:"Clínica San Rafael", empresaId:"e3", contactoId:"c3", segmento:"PyME", vendedorId:"v3", riesgo:"medio", ultimaCompra:iso(48), valorTotal:9700, ticketPromedio:2425, compras:4, fechaConversion:iso(300)},
+  ];
+  const oportunidades = [
+    {id:uid(), nombre:"Renovación anual — Ferretería del Istmo", clienteId:"cl1", empresaId:"e1", productoId:"p1", vendedorId:"v1", valor:4200, etapa:"negociacion", probabilidad:70, fechaCierre: iso(-8), ultimaActividad: iso(1), diasEtapaDesde: iso(3)},
+    {id:uid(), nombre:"Consultoría implementación textil", empresaId:"e2", productoId:"p2", vendedorId:"v2", valor:1800, etapa:"propuesta", probabilidad:55, fechaCierre: iso(-15), ultimaActividad: iso(7), diasEtapaDesde: iso(9)},
+    {id:uid(), nombre:"Soporte Premium — San Rafael", clienteId:"cl3", empresaId:"e3", productoId:"p4", vendedorId:"v3", valor:900, etapa:"calificado", probabilidad:35, fechaCierre: iso(-20), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
+    {id:uid(), nombre:"Licencia Starter — Comercial Molina", empresaId:null, productoId:"p3", vendedorId:"v2", valor:650, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-30), ultimaActividad: iso(6), diasEtapaDesde: iso(6)},
+    {id:uid(), nombre:"Plan corporativo — Import Herrera", empresaId:null, productoId:"p1", vendedorId:"v3", valor:4500, etapa:"contactado", probabilidad:20, fechaCierre: iso(-25), ultimaActividad: iso(9), diasEtapaDesde: iso(9)},
+    {id:uid(), nombre:"Licencia Starter — Textiles Boquete", empresaId:null, productoId:"p3", vendedorId:"v1", valor:5000, etapa:"nuevo", probabilidad:15, fechaCierre: iso(-5), ultimaActividad: iso(0), diasEtapaDesde: iso(0)},
+    {id:uid(), nombre:"Ampliación soporte — Andino Textil", clienteId:"cl2", empresaId:"e2", productoId:"p4", vendedorId:"v2", valor:1100, etapa:"ganado", probabilidad:100, fechaCierre: iso(2), ultimaActividad: iso(2), diasEtapaDesde: iso(2)},
+    {id:uid(), nombre:"Plan Starter — prospecto frío", empresaId:null, productoId:"p3", vendedorId:"v1", valor:650, etapa:"perdido", probabilidad:0, fechaCierre: iso(4), ultimaActividad: iso(4), diasEtapaDesde: iso(4)},
+  ];
+  const actividades = [
+    {id:uid(), tipo:"tarea", titulo:"Llamar a Camila Torres para calificar presupuesto", fecha: iso(-1), estado:"pendiente", vendedorId:"v1"},
+    {id:uid(), tipo:"seguimiento", titulo:"Seguimiento cotización — Grupo Andino Textil", fecha: iso(-3), estado:"vencida", vendedorId:"v2"},
+    {id:uid(), tipo:"reunion", titulo:"Reunión de cierre — Ferretería del Istmo", fecha: iso(-2), estado:"pendiente", vendedorId:"v1"},
+  ];
+  const scoringReglas = [
+    {id:uid(), evento:"Formulario enviado", puntos:10},
+    {id:uid(), evento:"Teléfono confirmado", puntos:5},
+    {id:uid(), evento:"Email abierto", puntos:3},
+    {id:uid(), evento:"Email clickeado", puntos:5},
+    {id:uid(), evento:"Respuesta por WhatsApp", puntos:10},
+    {id:uid(), evento:"Solicitud de cotización", puntos:20},
+    {id:uid(), evento:"Reunión agendada", puntos:25},
+    {id:uid(), evento:"Presupuesto informado", puntos:15},
+    {id:uid(), evento:"Visita página de precios", puntos:10},
+  ];
+  const scoringRangos = [
+    {etiqueta:"Frío", min:0, max:20, color:"info"},
+    {etiqueta:"Tibio", min:21, max:40, color:"amber"},
+    {etiqueta:"Caliente", min:41, max:70, color:"naranja"},
+    {etiqueta:"Prioridad", min:71, max:100, color:"red"},
+  ];
+  return {empresas, contactos, leads, clientes, oportunidades, productos: PRODUCTOS_SEED, actividades, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
+}
+
+let DB = load();
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  const s = seedData();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  return s;
+}
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+
+/* ---------------------------- RULES (centralizadas) ---------------------------- */
+function scoreLabel(puntuacion){
+  const r = DB.scoringRangos.find(r=> puntuacion>=r.min && puntuacion<=r.max) || DB.scoringRangos[0];
+  return r;
+}
+function scoreClass(etiqueta){
+  return {"Frío":"score-frio","Tibio":"score-tibio","Caliente":"score-caliente","Prioridad":"score-prioridad"}[etiqueta] || "score-frio";
+}
+function vendedorNombre(id){ const v=VENDEDORES.find(x=>x.id===id); return v? v.nombre : "Sin asignar"; }
+function empresaNombre(id){ const e=DB.empresas.find(x=>x.id===id); return e? e.nombre : "—"; }
+const ETAPAS = ["nuevo","contactado","calificado","propuesta","negociacion","ganado","perdido"];
+const ETAPA_LABEL = {nuevo:"Nuevo",contactado:"Contactado",calificado:"Calificado",propuesta:"Propuesta",negociacion:"Negociación",ganado:"Ganado",perdido:"Perdido"};
+
+/* ---------------------------- NAV CONFIG ---------------------------- */
+const NAV = [
+  {group:"Inicio", items:[
+    {id:"dashboard", label:"Dashboard", ready:true},
+    {id:"alertas", label:"Alertas y tareas", ready:true},
+  ]},
+  {group:"Prospección", items:[
+    {id:"leads", label:"Prospectos", ready:true},
+    {id:"scoring", label:"Lead Scoring", ready:true},
+    {id:"fuentes", label:"Fuentes y campañas", ready:false},
+    {id:"formularios", label:"Formularios web", ready:false},
+  ]},
+  {group:"Clientes", items:[
+    {id:"clientes", label:"Clientes", ready:true},
+    {id:"empresas", label:"Empresas y contactos", ready:true},
+    {id:"riesgo", label:"Clientes en riesgo", ready:true},
+  ]},
+  {group:"Ventas", items:[
+    {id:"pipeline", label:"Pipeline", ready:true},
+    {id:"oportunidades", label:"Oportunidades", ready:true},
+    {id:"cotizaciones", label:"Cotizaciones", ready:false},
+    {id:"productos", label:"Productos y servicios", ready:false},
+    {id:"metas", label:"Metas y forecast", ready:false},
+  ]},
+  {group:"Automatización", items:[
+    {id:"workflows", label:"Workflows y reglas", ready:false},
+  ]},
+  {group:"Analítica y reportes", items:[
+    {id:"analitica", label:"Analítica comercial", ready:false},
+    {id:"reportes", label:"Reportes y exportación", ready:false},
+  ]},
+  {group:"Administración", items:[
+    {id:"admin", label:"Usuarios, roles y auditoría", ready:false},
+  ]},
+];
+
+let currentView = "dashboard";
+
+function renderNav(){
+  const root = document.getElementById("navroot");
+  root.innerHTML = NAV.map(g=>`
+    <div class="navgroup">
+      <div class="navgroup-title">${g.group}</div>
+      ${g.items.map(it=>`
+        <a href="#" class="navitem ${it.id===currentView?'active':''}" data-view="${it.id}">
+          <span>${it.label}</span>
+          ${it.ready ? '' : '<span class="tag">Próximamente</span>'}
+        </a>`).join("")}
+    </div>`).join("");
+  root.querySelectorAll(".navitem").forEach(a=>{
+    a.addEventListener("click", e=>{
+      e.preventDefault();
+      goTo(a.dataset.view);
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("overlay").classList.remove("active");
+    });
+  });
+}
+
+function goTo(view){
+  currentView = view;
+  renderNav();
+  renderView();
+}
+
+/* ---------------------------- TOAST ---------------------------- */
+function toast(msg, isErr){
+  const wrap = document.getElementById("toastWrap");
+  const t = document.createElement("div");
+  t.className = "toast" + (isErr?" err":"");
+  t.textContent = (isErr?"⚠ ":"✓ ") + msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transition=".3s"; setTimeout(()=>t.remove(),300); }, 2600);
+}
+
+/* ---------------------------- MODAL ---------------------------- */
+function openModal(html){
+  document.getElementById("modalBox").innerHTML = html;
+  document.getElementById("modalBg").classList.add("active");
+}
+function closeModal(){ document.getElementById("modalBg").classList.remove("active"); }
+document.getElementById("modalBg").addEventListener("click", e=>{ if(e.target.id==="modalBg") closeModal(); });
+
+/* ============================================================================
+   VIEWS
+============================================================================ */
+function renderView(){
+  const titles = {};
+  NAV.forEach(g=>g.items.forEach(it=>titles[it.id]=it.label));
+  document.getElementById("viewTitle").textContent = titles[currentView] || "Módulo";
+  const c = document.getElementById("content");
+
+  const activeItem = NAV.flatMap(g=>g.items).find(i=>i.id===currentView);
+  if(activeItem && !activeItem.ready){
+    c.innerHTML = viewSoon(activeItem.label);
+    return;
+  }
+
+  const renderers = {
+    dashboard: viewDashboard,
+    alertas: viewAlertas,
+    leads: viewLeads,
+    scoring: viewScoring,
+    clientes: viewClientes,
+    empresas: viewEmpresas,
+    riesgo: viewRiesgo,
+    pipeline: viewPipeline,
+    oportunidades: viewOportunidades,
+  };
+  c.innerHTML = (renderers[currentView] || viewDashboard)();
+  bindViewEvents();
+}
+
+function viewSoon(label){
+  return `<div class="card"><div class="empty">
+    <div class="big">🛠️</div>
+    <h3 style="margin:6px 0 4px;">${label}</h3>
+    <p style="max-width:420px;margin:0 auto;">Función preparada — integración pendiente. Este módulo aparecerá activo cuando se conecte su servicio real (ver <span class="mono">docs/arquitectura.md</span>).</p>
+  </div></div>`;
+}
+
+/* --------------------------- DASHBOARD --------------------------- */
+function viewDashboard(){
+  const leads = DB.leads.filter(l=>l.estado!=="convertido" && l.estado!=="perdido");
+  const nuevos = DB.leads.filter(l=> daysAgo(l.fechaIngreso)<=1).length;
+  const calientes = DB.leads.filter(l=>{
+    const lab = scoreLabel(l.puntuacion).etiqueta;
+    return (lab==="Caliente"||lab==="Prioridad");
+  });
+  const calientesSinContactar = calientes.filter(l=>l.estado==="nuevo").length;
+
+  const opsAbiertas = DB.oportunidades.filter(o=>o.etapa!=="ganado"&&o.etapa!=="perdido");
+  const valorPipeline = opsAbiertas.reduce((a,o)=>a+o.valor,0);
+  const estancadas = opsAbiertas.filter(o=> daysAgo(o.diasEtapaDesde) > 5);
+  const valorEstancado = estancadas.reduce((a,o)=>a+o.valor,0);
+
+  const ganadas = DB.oportunidades.filter(o=>o.etapa==="ganado");
+  const perdidas = DB.oportunidades.filter(o=>o.etapa==="perdido");
+  const totalCerradas = ganadas.length+perdidas.length;
+  const conversion = totalCerradas ? Math.round((ganadas.length/totalCerradas)*100) : 0;
+  const ventasPeriodo = ganadas.reduce((a,o)=>a+o.valor,0);
+  const ticketProm = ganadas.length ? Math.round(ventasPeriodo/ganadas.length) : 0;
+
+  const clientesRiesgo = DB.clientes.filter(c=>c.riesgo==="alto").length;
+
+  const metaMensual = 15000;
+  const cumplMeta = Math.min(100, Math.round((ventasPeriodo/metaMensual)*100));
+
+  const etapasResumen = ETAPAS.filter(e=>e!=="perdido").map(e=>{
+    const ops = DB.oportunidades.filter(o=>o.etapa===e);
+    const valor = ops.reduce((a,o)=>a+o.valor,0);
+    return {etapa:e, cantidad:ops.length, valor};
+  });
+  const totalEnFunnel = etapasResumen.reduce((a,e)=>a+e.cantidad,0)||1;
+
+  const tareasPendientes = DB.actividades.filter(a=>a.estado==="pendiente"||a.estado==="vencida");
+  const cotizacionesActivas = 3; // demo estático — módulo cotizaciones pendiente
+
+  return `
+  <div class="section-title">Indicadores clave</div>
+  <div class="grid cols-4">
+    <div class="card kpi clickable" data-goto="leads">
+      <div class="label">Prospectos totales</div>
+      <div class="value">${DB.leads.length}</div>
+      <div class="insight ${calientesSinContactar? 'risk':'good'}">${calientesSinContactar} calientes sin contactar</div>
+    </div>
+    <div class="card kpi clickable" data-goto="leads">
+      <div class="label">Prospectos nuevos (24h)</div>
+      <div class="value">${nuevos}</div>
+      <div class="insight info">${leads.length} activos en total</div>
+    </div>
+    <div class="card kpi clickable" data-goto="pipeline">
+      <div class="label">Valor del pipeline</div>
+      <div class="value">${fmtMoney(valorPipeline)}</div>
+      <div class="insight ${valorEstancado? 'warn':'good'}">${fmtMoney(valorEstancado)} sin actividad +5 días</div>
+    </div>
+    <div class="card kpi clickable" data-goto="oportunidades">
+      <div class="label">Oportunidades abiertas</div>
+      <div class="value">${opsAbiertas.length}</div>
+      <div class="insight ${estancadas.length?'warn':'good'}">${estancadas.length} estancadas</div>
+    </div>
+    <div class="card kpi clickable" data-goto="oportunidades">
+      <div class="label">Ventas del período</div>
+      <div class="value">${fmtMoney(ventasPeriodo)}</div>
+      <div class="insight good">${ganadas.length} cierres ganados</div>
+    </div>
+    <div class="card kpi clickable" data-goto="pipeline">
+      <div class="label">Conversión lead → venta</div>
+      <div class="value">${conversion}%</div>
+      <div class="insight info">${perdidas.length} oportunidades perdidas</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Ticket promedio</div>
+      <div class="value">${fmtMoney(ticketProm)}</div>
+      <div class="insight info">sobre ${ganadas.length} ventas cerradas</div>
+    </div>
+    <div class="card kpi clickable" data-goto="riesgo">
+      <div class="label">Clientes en riesgo</div>
+      <div class="value">${clientesRiesgo}</div>
+      <div class="insight ${clientesRiesgo? 'risk':'good'}">${clientesRiesgo? 'Requieren seguimiento' : 'Sin alertas activas'}</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Cumplimiento de meta</div>
+      <div class="value">${cumplMeta}%</div>
+      <div class="insight ${cumplMeta<60?'warn':'good'}">Meta mensual: ${fmtMoney(metaMensual)}</div>
+    </div>
+  </div>
+
+  <div class="section-title">Pipeline comercial</div>
+  <div class="card card-pad">
+    <div style="display:flex;gap:6px;align-items:stretch;overflow-x:auto;">
+      ${etapasResumen.map((e,i)=>`
+        <div style="flex:1;min-width:120px;text-align:center;position:relative;">
+          <div style="background:${i<2?'var(--info-soft)': i<4?'var(--amber-soft)':'var(--accent-soft)'};border-radius:8px;padding:12px 8px;">
+            <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:4px;">${ETAPA_LABEL[e.etapa]}</div>
+            <div style="font-family:'Sora';font-weight:700;font-size:18px;">${e.cantidad}</div>
+            <div style="font-size:11px;font-family:'IBM Plex Mono';color:var(--muted);">${fmtMoney(e.valor)}</div>
+            <div style="font-size:10.5px;color:var(--muted);">${Math.round(e.cantidad/totalEnFunnel*100)}%</div>
+          </div>
+        </div>
+        ${i<etapasResumen.length-1?'<div style="align-self:center;color:var(--muted);font-size:16px;">›</div>':''}
+      `).join("")}
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-top:20px;align-items:start;">
+    <div>
+      <div class="section-title">Alertas activas</div>
+      <div class="card card-pad">
+        ${calientesSinContactar? `<div class="alert-row"><span class="txt"><b>${calientesSinContactar}</b> prospectos calientes sin contactar</span><button class="btn btn-sm" data-goto="leads">Ver</button></div>`:""}
+        ${estancadas.length? `<div class="alert-row"><span class="txt"><b>${estancadas.length}</b> oportunidades estancadas · ${fmtMoney(valorEstancado)}</span><button class="btn btn-sm" data-goto="pipeline">Ver</button></div>`:""}
+        ${clientesRiesgo? `<div class="alert-row"><span class="txt"><b>${clientesRiesgo}</b> clientes en riesgo alto</span><button class="btn btn-sm" data-goto="riesgo">Ver</button></div>`:""}
+        <div class="alert-row"><span class="txt"><b>2</b> cotizaciones próximas a vencer</span><span class="soon-badge">Próximamente</span></div>
+        ${cumplMeta<60? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><span></span></div>`:""}
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Tareas pendientes</div>
+      <div class="card card-pad">
+        ${tareasPendientes.length? tareasPendientes.map(t=>`
+          <div class="alert-row"><span class="txt">${t.estado==='vencida'?'⏰ ':'• '}${t.titulo}<br><span style="color:var(--muted);font-size:11.5px;">${vendedorNombre(t.vendedorId)} · ${fmtDate(t.fecha)}</span></span></div>
+        `).join("") : `<div class="empty" style="padding:16px;">Sin tareas pendientes.</div>`}
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+/* --------------------------- ALERTAS / TAREAS --------------------------- */
+function viewAlertas(){
+  const rows = DB.actividades.slice().sort((a,b)=> new Date(a.fecha)-new Date(b.fecha));
+  return `
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tipo</th><th>Actividad</th><th>Responsable</th><th>Fecha</th><th>Estado</th></tr></thead>
+      <tbody>
+        ${rows.map(a=>`
+        <tr>
+          <td data-label="Tipo">${a.tipo}</td>
+          <td data-label="Actividad">${a.titulo}</td>
+          <td data-label="Responsable">${vendedorNombre(a.vendedorId)}</td>
+          <td data-label="Fecha">${fmtDate(a.fecha)}</td>
+          <td data-label="Estado"><span class="badge ${a.estado==='vencida'?'badge-perdido':'badge-nuevo'}">${a.estado}</span></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+/* --------------------------- LEADS --------------------------- */
+let leadFilters = {estado:"", prioridad:"", q:""};
+
+function viewLeads(){
+  const rows = DB.leads.filter(l=>{
+    if(leadFilters.estado && l.estado!==leadFilters.estado) return false;
+    if(leadFilters.prioridad && l.prioridad!==leadFilters.prioridad) return false;
+    if(leadFilters.q){
+      const q = leadFilters.q.toLowerCase();
+      if(!(`${l.nombre} ${l.apellido} ${l.empresaNombre}`.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  }).sort((a,b)=> b.puntuacion-a.puntuacion);
+
+  return `
+  <div class="toolbar">
+    <div class="filters">
+      <div class="search-box"><input type="text" id="leadSearch" placeholder="Buscar prospecto o empresa..." value="${leadFilters.q}"></div>
+      <select id="fEstado">
+        <option value="">Todos los estados</option>
+        ${["nuevo","contactado","calificado","no_calificado","en_seguimiento","convertido","perdido"].map(s=>`<option value="${s}" ${leadFilters.estado===s?'selected':''}>${s.replace('_',' ')}</option>`).join("")}
+      </select>
+      <select id="fPrioridad">
+        <option value="">Toda prioridad</option>
+        ${["baja","media","alta","critica"].map(s=>`<option value="${s}" ${leadFilters.prioridad===s?'selected':''}>${s}</option>`).join("")}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" id="btnImportar">Importar</button>
+      <button class="btn btn-primary" id="btnNuevoLead">+ Nuevo prospecto</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Prospecto</th><th>Empresa</th><th>Fuente</th><th>Vendedor</th><th>Estado</th><th>Prioridad</th><th>Puntaje</th><th>Ingreso</th><th></th></tr></thead>
+      <tbody>
+        ${rows.length? rows.map(l=>{
+          const sl = scoreLabel(l.puntuacion);
+          return `
+          <tr class="rowlink" data-lead="${l.id}">
+            <td data-label="Prospecto"><b>${l.nombre} ${l.apellido}</b><br><span style="color:var(--muted);font-size:11.5px;">${l.email}</span></td>
+            <td data-label="Empresa">${l.empresaNombre||"—"}</td>
+            <td data-label="Fuente">${l.fuente}</td>
+            <td data-label="Vendedor">${vendedorNombre(l.vendedorId)}</td>
+            <td data-label="Estado"><span class="badge badge-${l.estado.replace('_','')}">${l.estado.replace('_',' ')}</span></td>
+            <td data-label="Prioridad"><span class="badge badge-${l.prioridad}">${l.prioridad}</span></td>
+            <td data-label="Puntaje"><span class="score-chip ${scoreClass(sl.etiqueta)}">${l.puntuacion} · ${sl.etiqueta}</span></td>
+            <td data-label="Ingreso">${fmtDate(l.fechaIngreso)}</td>
+            <td data-label=""><button class="btn btn-sm" data-convert="${l.id}">Convertir</button></td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="9"><div class="empty"><div class="big">🔎</div>Ningún prospecto coincide con estos filtros.</div></td></tr>`}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+function leadForm(lead){
+  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:VENDEDORES[0].id,prioridad:"media"};
+  return `
+  <div class="modal-head"><h3>${lead? "Editar prospecto":"Nuevo prospecto"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="field"><label>Nombre</label><input id="f_nombre" value="${l.nombre}"></div>
+      <div class="field"><label>Apellido</label><input id="f_apellido" value="${l.apellido}"></div>
+      <div class="field"><label>Empresa</label><input id="f_empresa" value="${l.empresaNombre}"></div>
+      <div class="field"><label>Cargo</label><input id="f_cargo" value="${l.cargo}"></div>
+      <div class="field"><label>Email</label><input type="email" id="f_email" value="${l.email}"></div>
+      <div class="field"><label>Teléfono</label><input id="f_telefono" value="${l.telefono}"></div>
+      <div class="field"><label>Fuente</label><select id="f_fuente">${FUENTES.map(f=>`<option ${f===l.fuente?'selected':''}>${f}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor asignado</label><select id="f_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Producto de interés</label><input id="f_producto" value="${l.productoInteres}"></div>
+      <div class="field"><label>Presupuesto estimado</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
+      <div class="field"><label>Prioridad</label><select id="f_prioridad">${["baja","media","alta","critica"].map(p=>`<option ${p===l.prioridad?'selected':''}>${p}</option>`).join("")}</select></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="saveLead" data-id="${lead? lead.id:''}">Guardar prospecto</button>
+  </div>`;
+}
+
+/* --------------------------- LEAD SCORING --------------------------- */
+function viewScoring(){
+  return `
+  <div class="grid cols-2" style="align-items:start;">
+    <div>
+      <div class="section-title">Reglas de puntuación (centralizadas)</div>
+      <div class="card">
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>Evento</th><th>Puntos</th><th></th></tr></thead>
+          <tbody>
+            ${DB.scoringReglas.map(r=>`
+            <tr>
+              <td data-label="Evento">${r.evento}</td>
+              <td data-label="Puntos"><input type="number" class="mono" style="width:70px" value="${r.puntos}" data-regla="${r.id}"></td>
+              <td data-label=""></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+        </div>
+        <div style="padding:12px 16px;"><button class="btn btn-accent btn-sm" id="saveScoring">Guardar reglas</button></div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Clasificación por rango</div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:10px;">
+        ${DB.scoringRangos.map(r=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="score-chip ${scoreClass(r.etiqueta)}">${r.etiqueta}</span>
+            <span class="mono" style="color:var(--muted);font-size:12.5px;">${r.min}–${r.max} pts</span>
+          </div>`).join("")}
+      </div>
+      <div class="section-title">Simulador rápido</div>
+      <div class="card card-pad">
+        <div class="field"><label>Puntaje a simular</label><input type="number" id="simScore" value="45" style="width:100%"></div>
+        <div id="simResult" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* --------------------------- CLIENTES --------------------------- */
+function viewClientes(){
+  return `
+  <div class="toolbar">
+    <div class="search-box"><input type="text" placeholder="Buscar cliente..."></div>
+    <button class="btn btn-primary" disabled title="Los clientes se crean convirtiendo un prospecto">+ Nuevo cliente</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Cliente</th><th>Segmento</th><th>Vendedor</th><th>Valor total</th><th>Ticket prom.</th><th>Última compra</th><th>Riesgo</th></tr></thead>
+      <tbody>
+        ${DB.clientes.map(c=>`
+        <tr class="rowlink" data-cliente="${c.id}">
+          <td data-label="Cliente"><b>${c.nombre}</b></td>
+          <td data-label="Segmento">${c.segmento}</td>
+          <td data-label="Vendedor">${vendedorNombre(c.vendedorId)}</td>
+          <td data-label="Valor total" class="mono">${fmtMoney(c.valorTotal)}</td>
+          <td data-label="Ticket prom." class="mono">${fmtMoney(c.ticketPromedio)}</td>
+          <td data-label="Última compra">${fmtDate(c.ultimaCompra)} <span style="color:var(--muted);font-size:11px;">(${daysAgo(c.ultimaCompra)}d)</span></td>
+          <td data-label="Riesgo"><span class="badge badge-${c.riesgo==='alto'?'critica':c.riesgo==='medio'?'alta':'calificado'}">${c.riesgo}</span></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+function clientePerfil(c){
+  const acts = [
+    {fecha:c.ultimaCompra, titulo:"Última compra registrada"},
+    {fecha:new Date(Date.now()-14*86400000).toISOString(), titulo:"Reunión comercial de seguimiento"},
+    {fecha:c.fechaConversion, titulo:"Lead convertido a cliente"},
+  ];
+  return `
+  <div class="modal-head"><h3>${c.nombre}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="grid cols-3" style="margin-bottom:16px;">
+      <div class="card kpi"><div class="label">LTV</div><div class="value" style="font-size:19px;">${fmtMoney(c.valorTotal)}</div></div>
+      <div class="card kpi"><div class="label">Compras</div><div class="value" style="font-size:19px;">${c.compras}</div></div>
+      <div class="card kpi"><div class="label">Días sin comprar</div><div class="value" style="font-size:19px;">${daysAgo(c.ultimaCompra)}</div></div>
+    </div>
+    <div class="section-title">Historial</div>
+    <div class="timeline">
+      ${acts.map(a=>`<div class="tl-item"><div class="tl-date">${fmtDate(a.fecha)}</div><div class="tl-title">${a.titulo}</div></div>`).join("")}
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+}
+
+/* --------------------------- RIESGO --------------------------- */
+function viewRiesgo(){
+  const rows = DB.clientes.filter(c=>c.riesgo!=="bajo").sort((a,b)=> daysAgo(b.ultimaCompra)-daysAgo(a.ultimaCompra));
+  return `
+  <div class="card card-pad" style="margin-bottom:14px;background:var(--red-soft);border-color:#F1C9BE;">
+    <b>${rows.length}</b> clientes muestran señales de riesgo (caída en frecuencia de compra o inactividad prolongada).
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Cliente</th><th>Nivel</th><th>Última compra</th><th>Días inactivo</th><th>Valor histórico</th></tr></thead>
+      <tbody>
+        ${rows.map(c=>`
+        <tr>
+          <td data-label="Cliente"><b>${c.nombre}</b></td>
+          <td data-label="Nivel"><span class="badge badge-${c.riesgo==='alto'?'critica':'alta'}">${c.riesgo}</span></td>
+          <td data-label="Última compra">${fmtDate(c.ultimaCompra)}</td>
+          <td data-label="Días inactivo">${daysAgo(c.ultimaCompra)}</td>
+          <td data-label="Valor histórico" class="mono">${fmtMoney(c.valorTotal)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+/* --------------------------- EMPRESAS / CONTACTOS --------------------------- */
+function viewEmpresas(){
+  return `
+  <div class="toolbar">
+    <div class="search-box"><input type="text" placeholder="Buscar empresa..."></div>
+    <button class="btn btn-primary" id="btnNuevaEmpresa">+ Nueva empresa</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Empresa</th><th>Industria</th><th>Ciudad</th><th>Contactos</th></tr></thead>
+      <tbody>
+        ${DB.empresas.map(e=>{
+          const conts = DB.contactos.filter(c=>c.empresaId===e.id);
+          return `
+          <tr class="rowlink" data-empresa="${e.id}">
+            <td data-label="Empresa"><b>${e.nombre}</b></td>
+            <td data-label="Industria">${e.industria}</td>
+            <td data-label="Ciudad">${e.ciudad}</td>
+            <td data-label="Contactos">${conts.length} contacto(s)</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+function empresaPerfil(e){
+  const conts = DB.contactos.filter(c=>c.empresaId===e.id);
+  return `
+  <div class="modal-head"><h3>${e.nombre}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);margin-top:0;">${e.industria} · ${e.ciudad}, ${e.pais}</p>
+    <div class="section-title">Contactos</div>
+    ${conts.map(c=>`
+      <div class="card card-pad" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <b>${c.nombre} ${c.apellido}</b> ${c.principal?'<span class="badge badge-calificado">Principal</span>':''}<br>
+          <span style="color:var(--muted);font-size:12.5px;">${c.cargo} · ${c.email} · ${c.telefono}</span>
+        </div>
+      </div>`).join("") || `<div class="empty">Esta empresa aún no tiene contactos registrados.</div>`}
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+}
+
+/* --------------------------- PIPELINE (KANBAN) --------------------------- */
+function viewPipeline(){
+  const cols = ETAPAS.map(et=>{
+    const ops = DB.oportunidades.filter(o=>o.etapa===et);
+    const valor = ops.reduce((a,o)=>a+o.valor,0);
+    return {etapa:et, ops, valor};
+  });
+  return `
+  <div class="kanban" id="kanbanRoot">
+    ${cols.map(col=>`
+      <div class="kcol" data-etapa="${col.etapa}">
+        <div class="kcol-head"><span class="t">${ETAPA_LABEL[col.etapa]}</span><span class="n">${col.ops.length}</span></div>
+        <div class="kcol-sum">${fmtMoney(col.valor)}</div>
+        <div class="kcol-body">
+          ${col.ops.map(o=>{
+            const dias = daysAgo(o.diasEtapaDesde);
+            return `
+            <div class="kcard" draggable="true" data-op="${o.id}">
+              <div class="name">${o.nombre}</div>
+              <div class="company">${empresaNombre(o.empresaId)} · ${vendedorNombre(o.vendedorId)}</div>
+              <div class="foot">
+                <span class="value">${fmtMoney(o.valor)}</span>
+                <span class="days ${dias>5?'stale':''}">${dias}d en etapa</span>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>
+    `).join("")}
+  </div>`;
+}
+
+function bindKanban(){
+  const root = document.getElementById("kanbanRoot");
+  if(!root) return;
+  let dragId = null;
+  root.querySelectorAll(".kcard").forEach(card=>{
+    card.addEventListener("dragstart", e=>{ dragId = card.dataset.op; card.classList.add("drag"); });
+    card.addEventListener("dragend", e=>{ card.classList.remove("drag"); });
+  });
+  root.querySelectorAll(".kcol").forEach(col=>{
+    col.addEventListener("dragover", e=>{ e.preventDefault(); col.classList.add("dragover"); });
+    col.addEventListener("dragleave", ()=> col.classList.remove("dragover"));
+    col.addEventListener("drop", e=>{
+      e.preventDefault();
+      col.classList.remove("dragover");
+      const nuevaEtapa = col.dataset.etapa;
+      const op = DB.oportunidades.find(o=>o.id===dragId);
+      if(op && op.etapa !== nuevaEtapa){
+        DB.oportunidadesHistorial.push({opId:op.id, de:op.etapa, a:nuevaEtapa, fecha:todayISO()});
+        op.etapa = nuevaEtapa;
+        op.diasEtapaDesde = todayISO();
+        op.probabilidad = nuevaEtapa==="ganado"?100: nuevaEtapa==="perdido"?0: op.probabilidad;
+        save();
+        toast(`Oportunidad movida a "${ETAPA_LABEL[nuevaEtapa]}"`);
+        renderView();
+      }
+    });
+  });
+}
+
+/* --------------------------- OPORTUNIDADES (tabla) --------------------------- */
+function viewOportunidades(){
+  const rows = DB.oportunidades.slice().sort((a,b)=> b.valor-a.valor);
+  return `
+  <div class="toolbar">
+    <div class="search-box"><input type="text" placeholder="Buscar oportunidad..."></div>
+    <button class="btn btn-primary" id="btnNuevaOp">+ Nueva oportunidad</button>
+  </div>
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Oportunidad</th><th>Empresa</th><th>Vendedor</th><th>Etapa</th><th>Valor</th><th>Prob.</th><th>Días en etapa</th></tr></thead>
+      <tbody>
+        ${rows.map(o=>{
+          const dias = daysAgo(o.diasEtapaDesde);
+          return `
+          <tr>
+            <td data-label="Oportunidad"><b>${o.nombre}</b></td>
+            <td data-label="Empresa">${empresaNombre(o.empresaId)}</td>
+            <td data-label="Vendedor">${vendedorNombre(o.vendedorId)}</td>
+            <td data-label="Etapa"><span class="badge badge-${o.etapa==='ganado'?'convertido':o.etapa==='perdido'?'perdido':'nuevo'}">${ETAPA_LABEL[o.etapa]}</span></td>
+            <td data-label="Valor" class="mono">${fmtMoney(o.valor)}</td>
+            <td data-label="Prob.">${o.probabilidad}%</td>
+            <td data-label="Días en etapa">${dias>5? `<span style="color:var(--red);font-weight:600;">${dias}d</span>` : dias+'d'}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+/* ============================================================================
+   EVENT BINDING
+============================================================================ */
+function bindViewEvents(){
+  document.querySelectorAll("[data-goto]").forEach(el=>{
+    el.addEventListener("click", ()=> goTo(el.dataset.goto));
+  });
+
+  // LEADS
+  const leadSearch = document.getElementById("leadSearch");
+  if(leadSearch){
+    leadSearch.addEventListener("input", e=>{ leadFilters.q = e.target.value; viewLeadsUpdate(); });
+    document.getElementById("fEstado").addEventListener("change", e=>{ leadFilters.estado=e.target.value; viewLeadsUpdate(); });
+    document.getElementById("fPrioridad").addEventListener("change", e=>{ leadFilters.prioridad=e.target.value; viewLeadsUpdate(); });
+    document.getElementById("btnNuevoLead").addEventListener("click", ()=> openModal(leadForm()));
+    document.getElementById("btnImportar").addEventListener("click", ()=> openModal(`
+      <div class="modal-head"><h3>Importar prospectos</h3><button class="close-x" data-close>✕</button></div>
+      <div class="modal-body">
+        <p>Flujo previsto: seleccionar archivo → detectar columnas → mapear campos → validar → detectar duplicados → vista previa → confirmar → importar.</p>
+        <div class="empty"><div class="big">📄</div>Función preparada — integración de importación CSV/Excel pendiente.</div>
+      </div>
+      <div class="modal-foot"><button class="btn" data-close>Entendido</button></div>
+    `));
+    document.querySelectorAll("[data-lead]").forEach(row=>{
+      row.addEventListener("click", e=>{
+        if(e.target.closest("[data-convert]")) return;
+        const l = DB.leads.find(x=>x.id===row.dataset.lead);
+        openModal(leadForm(l));
+      });
+    });
+    document.querySelectorAll("[data-convert]").forEach(btn=>{
+      btn.addEventListener("click", e=>{
+        e.stopPropagation();
+        const l = DB.leads.find(x=>x.id===btn.dataset.convert);
+        if(!l) return;
+        l.estado = "convertido";
+        DB.clientes.push({
+          id:uid(), nombre:`${l.nombre} ${l.apellido}`, empresaId:null, contactoId:null,
+          segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
+          ultimaCompra: todayISO(), valorTotal:0, ticketPromedio:0, compras:0, fechaConversion: todayISO()
+        });
+        save();
+        toast(`${l.nombre} ${l.apellido} convertido a cliente`);
+        renderView();
+      });
+    });
+  }
+
+  const saveLeadBtn = document.getElementById("saveLead");
+  if(saveLeadBtn){
+    saveLeadBtn.addEventListener("click", ()=>{
+      const nombre = document.getElementById("f_nombre").value.trim();
+      if(!nombre){ toast("El nombre es obligatorio", true); return; }
+      const id = saveLeadBtn.dataset.id;
+      const data = {
+        nombre, apellido: document.getElementById("f_apellido").value,
+        empresaNombre: document.getElementById("f_empresa").value,
+        cargo: document.getElementById("f_cargo").value,
+        email: document.getElementById("f_email").value,
+        telefono: document.getElementById("f_telefono").value,
+        fuente: document.getElementById("f_fuente").value,
+        vendedorId: document.getElementById("f_vendedor").value,
+        productoInteres: document.getElementById("f_producto").value,
+        presupuesto: Number(document.getElementById("f_presupuesto").value)||0,
+        prioridad: document.getElementById("f_prioridad").value,
+      };
+      if(id){
+        Object.assign(DB.leads.find(l=>l.id===id), data);
+        toast("Prospecto actualizado");
+      }else{
+        DB.leads.unshift({...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()});
+        toast("Prospecto creado");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
+
+  // SCORING
+  const saveScoring = document.getElementById("saveScoring");
+  if(saveScoring){
+    saveScoring.addEventListener("click", ()=>{
+      document.querySelectorAll("[data-regla]").forEach(inp=>{
+        const r = DB.scoringReglas.find(x=>x.id===inp.dataset.regla);
+        if(r) r.puntos = Number(inp.value)||0;
+      });
+      save(); toast("Reglas de scoring actualizadas");
+    });
+    const simScore = document.getElementById("simScore");
+    const renderSim = ()=>{
+      const v = Number(simScore.value)||0;
+      const r = scoreLabel(v);
+      document.getElementById("simResult").innerHTML = `<span class="score-chip ${scoreClass(r.etiqueta)}">${v} pts → ${r.etiqueta}</span>`;
+    };
+    simScore.addEventListener("input", renderSim); renderSim();
+  }
+
+  // CLIENTES
+  document.querySelectorAll("[data-cliente]").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      const c = DB.clientes.find(x=>x.id===row.dataset.cliente);
+      openModal(clientePerfil(c));
+    });
+  });
+
+  // EMPRESAS
+  document.querySelectorAll("[data-empresa]").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      const e = DB.empresas.find(x=>x.id===row.dataset.empresa);
+      openModal(empresaPerfil(e));
+    });
+  });
+  const btnNuevaEmpresa = document.getElementById("btnNuevaEmpresa");
+  if(btnNuevaEmpresa) btnNuevaEmpresa.addEventListener("click", ()=> openModal(`
+    <div class="modal-head"><h3>Nueva empresa</h3><button class="close-x" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field"><label>Nombre</label><input id="ne_nombre"></div>
+        <div class="field"><label>Industria</label><input id="ne_industria"></div>
+        <div class="field"><label>Ciudad</label><input id="ne_ciudad"></div>
+        <div class="field"><label>País</label><input id="ne_pais" value="Panamá"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>Cancelar</button><button class="btn btn-primary" id="ne_save">Guardar empresa</button></div>
+  `));
+  const neSave = document.getElementById("ne_save");
+  if(neSave) neSave.addEventListener("click", ()=>{
+    const nombre = document.getElementById("ne_nombre").value.trim();
+    if(!nombre){ toast("El nombre es obligatorio", true); return; }
+    DB.empresas.push({id:uid(), nombre, industria: document.getElementById("ne_industria").value, ciudad: document.getElementById("ne_ciudad").value, pais: document.getElementById("ne_pais").value});
+    save(); toast("Empresa creada"); closeModal(); renderView();
+  });
+
+  // PIPELINE
+  bindKanban();
+
+  // Modal close buttons
+  document.querySelectorAll("[data-close]").forEach(b=> b.addEventListener("click", closeModal));
+}
+
+function viewLeadsUpdate(){
+  document.getElementById("content").innerHTML = viewLeads();
+  bindViewEvents();
+}
+
+/* ---------------------------- INIT ---------------------------- */
+document.getElementById("menuBtn").addEventListener("click", ()=>{
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("overlay").classList.toggle("active");
+});
+document.getElementById("overlay").addEventListener("click", ()=>{
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("overlay").classList.remove("active");
+});
+
+renderNav();
+renderView();
+</script>
+</body>
+</html>
