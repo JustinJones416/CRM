@@ -6,6 +6,8 @@
 <title>Nexo CRM — Prototipo Comercial</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
   --ink:#12182B;
@@ -260,6 +262,62 @@ const VENDEDORES = [
   {id:"v3", nombre:"Diana Cede\u00f1o"},
 ];
 const FUENTES = ["Referido","Google Ads","Meta Ads","Sitio web","Feria comercial","Llamada en frío"];
+
+/* ---------------------------- PAÍSES / HUSOS HORARIOS ---------------------------- */
+/* Catálogo usado para el mapa mundial y el cálculo de hora local del cliente.
+   tz = zona horaria IANA (para Intl.DateTimeFormat), lat/lng = coordenadas aproximadas de capital/centro. */
+const PAISES_TZ = [
+  {pais:"España", flag:"🇪🇸", tz:"Europe/Madrid", lat:40.4168, lng:-3.7038},
+  {pais:"Panamá", flag:"🇵🇦", tz:"America/Panama", lat:8.9824, lng:-79.5199},
+  {pais:"México", flag:"🇲🇽", tz:"America/Mexico_City", lat:19.4326, lng:-99.1332},
+  {pais:"Colombia", flag:"🇨🇴", tz:"America/Bogota", lat:4.7110, lng:-74.0721},
+  {pais:"Argentina", flag:"🇦🇷", tz:"America/Argentina/Buenos_Aires", lat:-34.6037, lng:-58.3816},
+  {pais:"Chile", flag:"🇨🇱", tz:"America/Santiago", lat:-33.4489, lng:-70.6693},
+  {pais:"Perú", flag:"🇵🇪", tz:"America/Lima", lat:-12.0464, lng:-77.0428},
+  {pais:"Estados Unidos", flag:"🇺🇸", tz:"America/New_York", lat:38.9072, lng:-77.0369},
+  {pais:"República Dominicana", flag:"🇩🇴", tz:"America/Santo_Domingo", lat:18.4861, lng:-69.9312},
+  {pais:"Costa Rica", flag:"🇨🇷", tz:"America/Costa_Rica", lat:9.9281, lng:-84.0907},
+  {pais:"Ecuador", flag:"🇪🇨", tz:"America/Guayaquil", lat:-0.1807, lng:-78.4678},
+  {pais:"Uruguay", flag:"🇺🇾", tz:"America/Montevideo", lat:-34.9011, lng:-56.1645},
+];
+function paisInfo(nombre){ return PAISES_TZ.find(p=>p.pais===nombre) || null; }
+function horaLocal(nombrePais){
+  const p = paisInfo(nombrePais);
+  if(!p) return "—";
+  try{
+    return new Intl.DateTimeFormat("es",{hour:"2-digit",minute:"2-digit",timeZone:p.tz}).format(new Date());
+  }catch(e){ return "—"; }
+}
+function diferenciaHoras(nombrePais){
+  const p = paisInfo(nombrePais);
+  if(!p) return null;
+  try{
+    const fmt = (tz)=> new Date(new Date().toLocaleString("en-US",{timeZone:tz}));
+    const localCliente = fmt(p.tz);
+    const localNuestro = fmt("America/Panama");
+    return Math.round((localCliente-localNuestro)/3600000);
+  }catch(e){ return null; }
+}
+
+/* ---------------------------- NICHO OBJETIVO Y PRESUPUESTO ---------------------------- */
+const NICHOS = ["Restaurante","Hotel","Clínica","Otro"];
+const PRESUPUESTO_MIN = 1200;
+const PRESUPUESTO_MAX = 1500;
+function encajaPresupuesto(monto){
+  const n = Number(monto)||0;
+  return n>=PRESUPUESTO_MIN && n<=PRESUPUESTO_MAX;
+}
+/* Calcula puntos de encaje real (nicho objetivo + presupuesto + falencia identificada + tamaño ideal 1-30 colaboradores) */
+function calcularEncaje(lead){
+  let pts = 0; const razones = [];
+  if(NICHOS.includes(lead.nicho) && lead.nicho!=="Otro"){ pts+=25; razones.push(`Nicho objetivo (${lead.nicho})`); }
+  if(encajaPresupuesto(lead.presupuesto)){ pts+=25; razones.push("Presupuesto dentro de rango ($1,200–$1,500)"); }
+  if(lead.falencia && lead.falencia.trim().length>10){ pts+=25; razones.push("Falencia de servicio identificada"); }
+  const col = Number(lead.colaboradores)||0;
+  if(col>=1 && col<=30){ pts+=15; razones.push("Tamaño ideal (1–30 colaboradores)"); }
+  if(lead.pais){ pts+=10; razones.push("Ubicación geográfica registrada"); }
+  return {pts, razones};
+}
 const PRODUCTOS_SEED = [
   {id:"p1", nombre:"Plan Corporativo Anual", categoria:"Software", precio:4200},
   {id:"p2", nombre:"Consultoría de Implementación", categoria:"Servicio", precio:1800},
@@ -281,13 +339,13 @@ function seedData(){
   const now = Date.now();
   const iso = (daysBack)=> new Date(now - daysBack*86400000).toISOString();
   const leads = [
-    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Textiles Boquete",cargo:"Compradora",email:"camila@tboquete.com",telefono:"6644-1010",fuente:"Google Ads",productoInteres:"Plan Corporativo Anual",presupuesto:5000,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0)},
-    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Grupo Andino Textil",cargo:"Jefe de Planta",email:"eduarte@andinotextil.com",telefono:"6600-2020",fuente:"Referido",productoInteres:"Consultoría de Implementación",presupuesto:2000,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2)},
-    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"6611-3030",fuente:"Feria comercial",productoInteres:"Soporte Premium",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1)},
-    {id:uid(),nombre:"Luis",apellido:"Ferm\u00edn",empresaNombre:"Ferretería del Istmo",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"6622-4040",fuente:"Sitio web",productoInteres:"Licencia Starter",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0)},
-    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Comercial Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"6633-5050",fuente:"Llamada en frío",productoInteres:"Licencia Starter",presupuesto:600,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6)},
-    {id:uid(),nombre:"Tom\u00e1s",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"6644-6060",fuente:"Referido",productoInteres:"Plan Corporativo Anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9)},
-    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Grupo Andino Textil",cargo:"Compradora",email:"pgomez@andinotextil.com",telefono:"6655-7070",fuente:"Google Ads",productoInteres:"Soporte Premium",presupuesto:900,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0)},
+    {id:uid(),nombre:"Camila",apellido:"Torres",empresaNombre:"Restaurante El Bistró",cargo:"Compradora",email:"camila@tboquete.com",telefono:"+34 611 220 330",fuente:"Google Ads",productoInteres:"Plan Corporativo Anual",presupuesto:1500,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:62,fechaIngreso:iso(0),pais:"España",colaboradores:14,nicho:"Restaurante",falencia:"Pierden reservas fuera de horario de atención telefónica."},
+    {id:uid(),nombre:"Esteban",apellido:"Duarte",empresaNombre:"Hotel Vista Andina",cargo:"Jefe de Operaciones",email:"eduarte@andinotextil.com",telefono:"+57 300 445 2020",fuente:"Referido",productoInteres:"Consultoría de Implementación",presupuesto:1350,vendedorId:"v2",estado:"contactado",prioridad:"media",puntuacion:38,fechaIngreso:iso(2),pais:"Colombia",colaboradores:22,nicho:"Hotel",falencia:"No automatizan confirmaciones de check-in por WhatsApp."},
+    {id:uid(),nombre:"Rocío",apellido:"Vega",empresaNombre:"Clínica San Rafael",cargo:"Directora",email:"rvega@sanrafael.com",telefono:"+507 6611-3030",fuente:"Feria comercial",productoInteres:"Soporte Premium",presupuesto:1200,vendedorId:"v3",estado:"calificado",prioridad:"critica",puntuacion:81,fechaIngreso:iso(1),pais:"Panamá",colaboradores:9,nicho:"Clínica",falencia:"Alto volumen de citas perdidas por falta de recordatorios automáticos."},
+    {id:uid(),nombre:"Luis",apellido:"Fermín",empresaNombre:"Restaurante La Terraza",cargo:"Gerente",email:"lfermin@ferreisto.com",telefono:"+34 622 118 040",fuente:"Sitio web",productoInteres:"Licencia Starter",presupuesto:800,vendedorId:"v1",estado:"nuevo",prioridad:"critica",puntuacion:74,fechaIngreso:iso(0),pais:"España",colaboradores:8,nicho:"Restaurante",falencia:""},
+    {id:uid(),nombre:"Andrea",apellido:"Molina",empresaNombre:"Hotel Boutique Molina",cargo:"Dueña",email:"amolina@cmolina.com",telefono:"+52 33 5544 5050",fuente:"Llamada en frío",productoInteres:"Licencia Starter",presupuesto:1450,vendedorId:"v2",estado:"en_seguimiento",prioridad:"baja",puntuacion:22,fechaIngreso:iso(6),pais:"México",colaboradores:17,nicho:"Hotel",falencia:"Sin agente que responda reservas de madrugada."},
+    {id:uid(),nombre:"Tomás",apellido:"Herrera",empresaNombre:"Import Herrera",cargo:"Gerente Comercial",email:"therrera@importh.com",telefono:"+507 6644-6060",fuente:"Referido",productoInteres:"Plan Corporativo Anual",presupuesto:4500,vendedorId:"v3",estado:"no_calificado",prioridad:"baja",puntuacion:12,fechaIngreso:iso(9),pais:"Panamá",colaboradores:60,nicho:"Otro",falencia:""},
+    {id:uid(),nombre:"Patricia",apellido:"Gómez",empresaNombre:"Clínica Dental Gómez",cargo:"Administradora",email:"pgomez@andinotextil.com",telefono:"+34 655 990 070",fuente:"Google Ads",productoInteres:"Soporte Premium",presupuesto:1250,vendedorId:"v1",estado:"nuevo",prioridad:"alta",puntuacion:58,fechaIngreso:iso(0),pais:"España",colaboradores:5,nicho:"Clínica",falencia:"No dan seguimiento automático a pacientes que no confirman cita."},
   ];
   const clientes = [
     {id:"cl1", nombre:"Ferretería del Istmo", empresaId:"e1", contactoId:"c1", segmento:"Corporativo", vendedorId:"v1", riesgo:"bajo", ultimaCompra:iso(12), valorTotal:18400, ticketPromedio:4600, compras:4, fechaConversion:iso(210)},
@@ -361,6 +419,7 @@ const NAV = [
   ]},
   {group:"Prospección", items:[
     {id:"leads", label:"Prospectos", ready:true},
+    {id:"mapa", label:"Mapa global", ready:true},
     {id:"scoring", label:"Lead Scoring", ready:true},
     {id:"fuentes", label:"Fuentes y campañas", ready:false},
     {id:"formularios", label:"Formularios web", ready:false},
@@ -432,6 +491,7 @@ function toast(msg, isErr){
 function openModal(html){
   document.getElementById("modalBox").innerHTML = html;
   document.getElementById("modalBg").classList.add("active");
+  bindModalEvents();
 }
 function closeModal(){ document.getElementById("modalBg").classList.remove("active"); }
 document.getElementById("modalBg").addEventListener("click", e=>{ if(e.target.id==="modalBg") closeModal(); });
@@ -455,6 +515,7 @@ function renderView(){
     dashboard: viewDashboard,
     alertas: viewAlertas,
     leads: viewLeads,
+    mapa: viewMapaGlobal,
     scoring: viewScoring,
     clientes: viewClientes,
     empresas: viewEmpresas,
@@ -464,6 +525,7 @@ function renderView(){
   };
   c.innerHTML = (renderers[currentView] || viewDashboard)();
   bindViewEvents();
+  if(currentView==="mapa") initMapaGlobal();
 }
 
 function viewSoon(label){
@@ -659,23 +721,26 @@ function viewLeads(){
   <div class="card">
     <div class="table-wrap">
     <table>
-      <thead><tr><th>Prospecto</th><th>Empresa</th><th>Fuente</th><th>Vendedor</th><th>Estado</th><th>Prioridad</th><th>Puntaje</th><th>Ingreso</th><th></th></tr></thead>
+      <thead><tr><th>Prospecto</th><th>Empresa</th><th>País</th><th>Nicho</th><th>Vendedor</th><th>Estado</th><th>Prioridad</th><th>Puntaje</th><th>Encaje</th><th></th></tr></thead>
       <tbody>
         ${rows.length? rows.map(l=>{
           const sl = scoreLabel(l.puntuacion);
+          const enc = calcularEncaje(l);
+          const p = paisInfo(l.pais);
           return `
           <tr class="rowlink" data-lead="${l.id}">
             <td data-label="Prospecto"><b>${l.nombre} ${l.apellido}</b><br><span style="color:var(--muted);font-size:11.5px;">${l.email}</span></td>
             <td data-label="Empresa">${l.empresaNombre||"—"}</td>
-            <td data-label="Fuente">${l.fuente}</td>
+            <td data-label="País">${p? `${p.flag} ${l.pais}<br><span class="mono" style="font-size:11px;color:var(--muted);">${horaLocal(l.pais)}</span>` : "—"}</td>
+            <td data-label="Nicho">${l.nicho||"—"}</td>
             <td data-label="Vendedor">${vendedorNombre(l.vendedorId)}</td>
             <td data-label="Estado"><span class="badge badge-${l.estado.replace('_','')}">${l.estado.replace('_',' ')}</span></td>
             <td data-label="Prioridad"><span class="badge badge-${l.prioridad}">${l.prioridad}</span></td>
             <td data-label="Puntaje"><span class="score-chip ${scoreClass(sl.etiqueta)}">${l.puntuacion} · ${sl.etiqueta}</span></td>
-            <td data-label="Ingreso">${fmtDate(l.fechaIngreso)}</td>
+            <td data-label="Encaje"><span class="score-chip ${enc.pts>=70?'score-prioridad':enc.pts>=40?'score-caliente':'score-frio'}">${enc.pts} pts</span></td>
             <td data-label=""><button class="btn btn-sm" data-convert="${l.id}">Convertir</button></td>
           </tr>`;
-        }).join("") : `<tr><td colspan="9"><div class="empty"><div class="big">🔎</div>Ningún prospecto coincide con estos filtros.</div></td></tr>`}
+        }).join("") : `<tr><td colspan="10"><div class="empty"><div class="big">🔎</div>Ningún prospecto coincide con estos filtros.</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -683,7 +748,8 @@ function viewLeads(){
 }
 
 function leadForm(lead){
-  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:VENDEDORES[0].id,prioridad:"media"};
+  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:VENDEDORES[0].id,prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
+  const enc = calcularEncaje(l);
   return `
   <div class="modal-head"><h3>${lead? "Editar prospecto":"Nuevo prospecto"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -693,12 +759,21 @@ function leadForm(lead){
       <div class="field"><label>Empresa</label><input id="f_empresa" value="${l.empresaNombre}"></div>
       <div class="field"><label>Cargo</label><input id="f_cargo" value="${l.cargo}"></div>
       <div class="field"><label>Email</label><input type="email" id="f_email" value="${l.email}"></div>
-      <div class="field"><label>Teléfono</label><input id="f_telefono" value="${l.telefono}"></div>
+      <div class="field"><label>Teléfono / WhatsApp</label><input id="f_telefono" value="${l.telefono}"></div>
+      <div class="field"><label>País del cliente</label><select id="f_pais">${PAISES_TZ.map(p=>`<option value="${p.pais}" ${p.pais===l.pais?'selected':''}>${p.flag} ${p.pais}</option>`).join("")}</select></div>
+      <div class="field"><label>Hora local ahora</label><input id="f_horalocal" value="${horaLocal(l.pais)} (actualiza al elegir país)" disabled></div>
+      <div class="field"><label>N.º de colaboradores</label><input type="number" id="f_colaboradores" min="0" value="${l.colaboradores}"></div>
+      <div class="field"><label>Nicho de negocio</label><select id="f_nicho">${NICHOS.map(n=>`<option ${n===l.nicho?'selected':''}>${n}</option>`).join("")}</select></div>
       <div class="field"><label>Fuente</label><select id="f_fuente">${FUENTES.map(f=>`<option ${f===l.fuente?'selected':''}>${f}</option>`).join("")}</select></div>
       <div class="field"><label>Vendedor asignado</label><select id="f_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Producto de interés</label><input id="f_producto" value="${l.productoInteres}"></div>
-      <div class="field"><label>Presupuesto estimado</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
+      <div class="field"><label>Presupuesto informado ($)</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
       <div class="field"><label>Prioridad</label><select id="f_prioridad">${["baja","media","alta","critica"].map(p=>`<option ${p===l.prioridad?'selected':''}>${p}</option>`).join("")}</select></div>
+      <div class="field" style="grid-column:1/-1;"><label>Falencia detectada en su servicio actual (qué mejoraría con nuestro agente de IA)</label><textarea id="f_falencia" rows="3" placeholder="Ej: pierde reservas fuera de horario, no responde WhatsApp a tiempo, no automatiza confirmaciones...">${l.falencia||""}</textarea></div>
+    </div>
+    <div class="card card-pad" id="f_encaje_box" style="margin-top:14px;background:var(--accent-soft);border-color:#BFE4DD;">
+      <b>Encaje con nuestro servicio: <span id="f_encaje_pts">${enc.pts}</span>/100 pts</b>
+      <div id="f_encaje_razones" style="font-size:12px;color:var(--muted);margin-top:4px;">${enc.razones.join(" · ")||"Completa los campos para calcular el encaje."}</div>
     </div>
   </div>
   <div class="modal-foot">
@@ -707,7 +782,97 @@ function leadForm(lead){
   </div>`;
 }
 
-/* --------------------------- LEAD SCORING --------------------------- */
+/* --------------------------- MAPA GLOBAL DE PROSPECTOS --------------------------- */
+function viewMapaGlobal(){
+  const conPais = DB.leads.filter(l=>l.pais);
+  return `
+  <div class="card card-pad" style="margin-bottom:14px;">
+    <b>Mapa mundial de prospectos</b>
+    <div style="color:var(--muted);font-size:12.5px;margin-top:2px;">
+      Ubicación, hora local exacta y encaje comercial de cada prospecto. Referencia horaria propia: Panamá (UTC-5).
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div id="mapaMundi" style="width:100%;height:460px;"></div>
+  </div>
+  <div class="card card-pad" style="margin-top:14px;">
+    <div class="section-title" style="margin-top:0;">Prospectos por país</div>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Prospecto</th><th>País</th><th>Hora local</th><th>Nicho</th><th>Colaboradores</th><th>Presupuesto</th><th>Encaje</th></tr></thead>
+      <tbody>
+        ${conPais.length? conPais.map(l=>{
+          const enc = calcularEncaje(l);
+          const p = paisInfo(l.pais);
+          return `
+          <tr data-lead="${l.id}" class="rowlink">
+            <td data-label="Prospecto"><b>${l.nombre} ${l.apellido}</b><br><span style="color:var(--muted);font-size:11.5px;">${l.empresaNombre||''}</span></td>
+            <td data-label="País">${p?p.flag:''} ${l.pais}</td>
+            <td data-label="Hora local" class="mono">${horaLocal(l.pais)}</td>
+            <td data-label="Nicho">${l.nicho||'—'}</td>
+            <td data-label="Colaboradores">${l.colaboradores||0}</td>
+            <td data-label="Presupuesto" class="mono">${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'<span class="badge badge-convertido">En rango</span>':''}</td>
+            <td data-label="Encaje"><span class="score-chip ${enc.pts>=70?'score-prioridad':enc.pts>=40?'score-caliente':'score-frio'}">${enc.pts} pts</span></td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="7"><div class="empty">Ningún prospecto tiene país registrado todavía. Edítalos desde "Prospectos" para verlos aquí.</div></td></tr>`}
+      </tbody>
+    </table>
+    </div>
+  </div>`;
+}
+
+function initMapaGlobal(){
+  const el = document.getElementById("mapaMundi");
+  if(!el || typeof L === "undefined") return;
+  const map = L.map("mapaMundi", {worldCopyJump:true}).setView([15, -30], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 18
+  }).addTo(map);
+
+  // Agrupar prospectos por país para no solapar marcadores
+  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais));
+  const porPais = {};
+  conPais.forEach(l=>{ (porPais[l.pais] = porPais[l.pais]||[]).push(l); });
+
+  Object.keys(porPais).forEach(paisNombre=>{
+    const p = paisInfo(paisNombre);
+    const leadsPais = porPais[paisNombre];
+    const encajePromedio = Math.round(leadsPais.reduce((a,l)=>a+calcularEncaje(l).pts,0)/leadsPais.length);
+    const color = encajePromedio>=70? "#C6432A" : encajePromedio>=40? "#B9791A" : "#4C5FD5";
+    const marker = L.circleMarker([p.lat,p.lng], {
+      radius: 9 + Math.min(leadsPais.length*2, 12),
+      fillColor: color, color:"#fff", weight:2, fillOpacity:.85
+    }).addTo(map);
+
+    const popupHtml = `
+      <div style="font-family:'Inter',sans-serif;min-width:220px;">
+        <b>${p.flag} ${paisNombre}</b> · <span class="mono" data-tz="${p.tz}" id="tzclock-${paisNombre.replace(/\s/g,'')}">${horaLocal(paisNombre)}</span>
+        <div style="font-size:11.5px;color:#6B7080;margin:4px 0 8px;">${leadsPais.length} prospecto(s) · encaje promedio ${encajePromedio} pts</div>
+        ${leadsPais.map(l=>{
+          const enc = calcularEncaje(l);
+          return `
+          <div style="border-top:1px solid #E4E6EE;padding:6px 0;">
+            <b>${l.nombre} ${l.apellido}</b> — ${l.empresaNombre||'Sin empresa'}<br>
+            <span style="font-size:11.5px;">${l.nicho||'—'} · ${l.colaboradores||0} colaboradores · ${l.telefono||'sin teléfono'}</span><br>
+            <span style="font-size:11.5px;">Presupuesto: ${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'✓ en rango':'⚠ fuera de rango'}</span><br>
+            ${l.falencia? `<span style="font-size:11.5px;color:#B9791A;">Falencia: ${l.falencia}</span><br>`:''}
+            <span style="font-size:11.5px;font-weight:700;">Encaje: ${enc.pts} pts</span>
+          </div>`;
+        }).join("")}
+      </div>`;
+    marker.bindPopup(popupHtml, {maxWidth:280});
+  });
+
+  // Reloj en vivo dentro de los popups abiertos
+  setInterval(()=>{
+    document.querySelectorAll("[data-tz]").forEach(elx=>{
+      try{ elx.textContent = new Intl.DateTimeFormat("es",{hour:"2-digit",minute:"2-digit",second:"2-digit",timeZone:elx.dataset.tz}).format(new Date()); }catch(e){}
+    });
+  }, 1000);
+}
+
+
 function viewScoring(){
   return `
   <div class="grid cols-2" style="align-items:start;">
@@ -947,7 +1112,7 @@ function viewOportunidades(){
         ${rows.map(o=>{
           const dias = daysAgo(o.diasEtapaDesde);
           return `
-          <tr>
+          <tr class="rowlink" data-op-row="${o.id}">
             <td data-label="Oportunidad"><b>${o.nombre}</b></td>
             <td data-label="Empresa">${empresaNombre(o.empresaId)}</td>
             <td data-label="Vendedor">${vendedorNombre(o.vendedorId)}</td>
@@ -966,9 +1131,45 @@ function viewOportunidades(){
 /* ============================================================================
    EVENT BINDING
 ============================================================================ */
+/* ============================================================================
+   FORMULARIO — OPORTUNIDAD (nueva o edición)
+============================================================================ */
+function oportunidadForm(op){
+  const o = op || {nombre:"", empresaId:"", vendedorId:VENDEDORES[0].id, valor:"", etapa:"nuevo", probabilidad:20};
+  return `
+  <div class="modal-head"><h3>${op? "Editar oportunidad":"Nueva oportunidad"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="field"><label>Nombre de la oportunidad</label><input id="op_nombre" value="${o.nombre}"></div>
+      <div class="field"><label>Empresa</label><select id="op_empresa"><option value="">— Sin empresa —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===o.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Vendedor asignado</label><select id="op_vendedor">${VENDEDORES.map(v=>`<option value="${v.id}" ${v.id===o.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
+      <div class="field"><label>Valor estimado ($)</label><input type="number" id="op_valor" value="${o.valor}"></div>
+      <div class="field"><label>Etapa</label><select id="op_etapa">${ETAPAS.map(et=>`<option value="${et}" ${et===o.etapa?'selected':''}>${ETAPA_LABEL[et]}</option>`).join("")}</select></div>
+      <div class="field"><label>Probabilidad de cierre (%)</label><input type="number" id="op_prob" min="0" max="100" value="${o.probabilidad}"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="saveOp" data-id="${op? op.id:''}">${op? "Guardar cambios":"Guardar oportunidad"}</button>
+  </div>`;
+}
+
+/* ============================================================================
+   EVENT BINDING — elementos de la vista actual (#content).
+   Se ejecuta cada vez que se renderiza una vista completa.
+============================================================================ */
 function bindViewEvents(){
   document.querySelectorAll("[data-goto]").forEach(el=>{
     el.addEventListener("click", ()=> goTo(el.dataset.goto));
+  });
+
+  // Filas de prospecto clicables en cualquier vista (Prospectos, Mapa global)
+  document.querySelectorAll("[data-lead]").forEach(row=>{
+    row.addEventListener("click", e=>{
+      if(e.target.closest("[data-convert]")) return;
+      const l = DB.leads.find(x=>x.id===row.dataset.lead);
+      if(l) openModal(leadForm(l));
+    });
   });
 
   // LEADS
@@ -986,13 +1187,6 @@ function bindViewEvents(){
       </div>
       <div class="modal-foot"><button class="btn" data-close>Entendido</button></div>
     `));
-    document.querySelectorAll("[data-lead]").forEach(row=>{
-      row.addEventListener("click", e=>{
-        if(e.target.closest("[data-convert]")) return;
-        const l = DB.leads.find(x=>x.id===row.dataset.lead);
-        openModal(leadForm(l));
-      });
-    });
     document.querySelectorAll("[data-convert]").forEach(btn=>{
       btn.addEventListener("click", e=>{
         e.stopPropagation();
@@ -1008,35 +1202,6 @@ function bindViewEvents(){
         toast(`${l.nombre} ${l.apellido} convertido a cliente`);
         renderView();
       });
-    });
-  }
-
-  const saveLeadBtn = document.getElementById("saveLead");
-  if(saveLeadBtn){
-    saveLeadBtn.addEventListener("click", ()=>{
-      const nombre = document.getElementById("f_nombre").value.trim();
-      if(!nombre){ toast("El nombre es obligatorio", true); return; }
-      const id = saveLeadBtn.dataset.id;
-      const data = {
-        nombre, apellido: document.getElementById("f_apellido").value,
-        empresaNombre: document.getElementById("f_empresa").value,
-        cargo: document.getElementById("f_cargo").value,
-        email: document.getElementById("f_email").value,
-        telefono: document.getElementById("f_telefono").value,
-        fuente: document.getElementById("f_fuente").value,
-        vendedorId: document.getElementById("f_vendedor").value,
-        productoInteres: document.getElementById("f_producto").value,
-        presupuesto: Number(document.getElementById("f_presupuesto").value)||0,
-        prioridad: document.getElementById("f_prioridad").value,
-      };
-      if(id){
-        Object.assign(DB.leads.find(l=>l.id===id), data);
-        toast("Prospecto actualizado");
-      }else{
-        DB.leads.unshift({...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()});
-        toast("Prospecto creado");
-      }
-      save(); closeModal(); renderView();
     });
   }
 
@@ -1087,19 +1252,132 @@ function bindViewEvents(){
     </div>
     <div class="modal-foot"><button class="btn" data-close>Cancelar</button><button class="btn btn-primary" id="ne_save">Guardar empresa</button></div>
   `));
-  const neSave = document.getElementById("ne_save");
-  if(neSave) neSave.addEventListener("click", ()=>{
-    const nombre = document.getElementById("ne_nombre").value.trim();
-    if(!nombre){ toast("El nombre es obligatorio", true); return; }
-    DB.empresas.push({id:uid(), nombre, industria: document.getElementById("ne_industria").value, ciudad: document.getElementById("ne_ciudad").value, pais: document.getElementById("ne_pais").value});
-    save(); toast("Empresa creada"); closeModal(); renderView();
+
+  // OPORTUNIDADES (tabla)
+  const btnNuevaOp = document.getElementById("btnNuevaOp");
+  if(btnNuevaOp) btnNuevaOp.addEventListener("click", ()=> openModal(oportunidadForm()));
+  document.querySelectorAll("[data-op-row]").forEach(row=>{
+    row.addEventListener("click", ()=>{
+      const o = DB.oportunidades.find(x=>x.id===row.dataset.opRow);
+      if(o) openModal(oportunidadForm(o));
+    });
   });
 
-  // PIPELINE
+  // PIPELINE (kanban) — abrir tarjeta al hacer click, mover etapa al arrastrar
   bindKanban();
+  document.querySelectorAll(".kcard").forEach(card=>{
+    card.addEventListener("click", ()=>{
+      const o = DB.oportunidades.find(x=>x.id===card.dataset.op);
+      if(o) openModal(oportunidadForm(o));
+    });
+  });
 
-  // Modal close buttons
+  // Modal close buttons (por si el modal ya estaba abierto al re-renderizar)
   document.querySelectorAll("[data-close]").forEach(b=> b.addEventListener("click", closeModal));
+}
+
+/* ============================================================================
+   MODAL EVENT BINDING — se ejecuta cada vez que se abre un modal (openModal),
+   porque su contenido se inyecta dinámicamente y bindViewEvents() ya se
+   ejecutó antes de que ese HTML existiera en el DOM.
+============================================================================ */
+function bindModalEvents(){
+  document.querySelectorAll("#modalBox [data-close]").forEach(b=> b.addEventListener("click", closeModal));
+
+  // Guardar prospecto (nuevo o edición)
+  const saveLeadBtn = document.getElementById("saveLead");
+  if(saveLeadBtn){
+    // Recalcular hora local y encaje en vivo mientras se completa el formulario
+    const updateLive = ()=>{
+      const paisSel = document.getElementById("f_pais");
+      const horaInp = document.getElementById("f_horalocal");
+      if(paisSel && horaInp) horaInp.value = horaLocal(paisSel.value) + " (hora actual)";
+      const enc = calcularEncaje({
+        nicho: document.getElementById("f_nicho")?.value,
+        presupuesto: document.getElementById("f_presupuesto")?.value,
+        falencia: document.getElementById("f_falencia")?.value,
+        colaboradores: document.getElementById("f_colaboradores")?.value,
+        pais: paisSel?.value,
+      });
+      const ptsEl = document.getElementById("f_encaje_pts");
+      const razEl = document.getElementById("f_encaje_razones");
+      if(ptsEl) ptsEl.textContent = enc.pts;
+      if(razEl) razEl.textContent = enc.razones.join(" · ") || "Completa los campos para calcular el encaje.";
+    };
+    ["f_pais","f_nicho","f_presupuesto","f_falencia","f_colaboradores"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.addEventListener("input", updateLive);
+    });
+    saveLeadBtn.addEventListener("click", ()=>{
+      const nombre = document.getElementById("f_nombre").value.trim();
+      if(!nombre){ toast("El nombre es obligatorio", true); return; }
+      const id = saveLeadBtn.dataset.id;
+      const data = {
+        nombre, apellido: document.getElementById("f_apellido").value,
+        empresaNombre: document.getElementById("f_empresa").value,
+        cargo: document.getElementById("f_cargo").value,
+        email: document.getElementById("f_email").value,
+        telefono: document.getElementById("f_telefono").value,
+        pais: document.getElementById("f_pais").value,
+        colaboradores: Number(document.getElementById("f_colaboradores").value)||0,
+        nicho: document.getElementById("f_nicho").value,
+        falencia: document.getElementById("f_falencia").value,
+        fuente: document.getElementById("f_fuente").value,
+        vendedorId: document.getElementById("f_vendedor").value,
+        productoInteres: document.getElementById("f_producto").value,
+        presupuesto: Number(document.getElementById("f_presupuesto").value)||0,
+        prioridad: document.getElementById("f_prioridad").value,
+      };
+      const enc = calcularEncaje(data);
+      data.puntosEncaje = enc.pts;
+      if(id){
+        Object.assign(DB.leads.find(l=>l.id===id), data);
+        toast("Prospecto actualizado");
+      }else{
+        DB.leads.unshift({...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()});
+        toast("Prospecto creado");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
+
+  // Guardar empresa
+  const neSave = document.getElementById("ne_save");
+  if(neSave){
+    neSave.addEventListener("click", ()=>{
+      const nombre = document.getElementById("ne_nombre").value.trim();
+      if(!nombre){ toast("El nombre es obligatorio", true); return; }
+      DB.empresas.push({id:uid(), nombre, industria: document.getElementById("ne_industria").value, ciudad: document.getElementById("ne_ciudad").value, pais: document.getElementById("ne_pais").value});
+      save(); toast("Empresa creada"); closeModal(); renderView();
+    });
+  }
+
+  // Guardar oportunidad (nueva o edición)
+  const saveOpBtn = document.getElementById("saveOp");
+  if(saveOpBtn){
+    saveOpBtn.addEventListener("click", ()=>{
+      const nombre = document.getElementById("op_nombre").value.trim();
+      if(!nombre){ toast("El nombre de la oportunidad es obligatorio", true); return; }
+      const id = saveOpBtn.dataset.id;
+      const data = {
+        nombre,
+        empresaId: document.getElementById("op_empresa").value || null,
+        vendedorId: document.getElementById("op_vendedor").value,
+        valor: Number(document.getElementById("op_valor").value)||0,
+        etapa: document.getElementById("op_etapa").value,
+        probabilidad: Number(document.getElementById("op_prob").value)||0,
+      };
+      if(id){
+        const op = DB.oportunidades.find(o=>o.id===id);
+        Object.assign(op, data);
+        toast("Oportunidad actualizada");
+      }else{
+        DB.oportunidades.push({...data, id:uid(), diasEtapaDesde: todayISO()});
+        toast("Oportunidad creada");
+      }
+      save(); closeModal(); renderView();
+    });
+  }
 }
 
 function viewLeadsUpdate(){
