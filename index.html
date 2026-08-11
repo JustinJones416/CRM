@@ -1189,14 +1189,14 @@ function viewRiesgo(){
     <table>
       <thead><tr><th>Cliente</th><th>Nivel</th><th>Última compra</th><th>Días inactivo</th><th>Valor histórico</th></tr></thead>
       <tbody>
-        ${rows.map(c=>`
-        <tr>
+        ${rows.length? rows.map(c=>`
+        <tr class="rowlink" data-cliente="${c.id}">
           <td data-label="Cliente"><b>${c.nombre}</b></td>
           <td data-label="Nivel"><span class="badge badge-${c.riesgo==='alto'?'critica':'alta'}">${c.riesgo}</span></td>
           <td data-label="Última compra">${fmtDate(c.ultimaCompra)}</td>
           <td data-label="Días inactivo">${daysAgo(c.ultimaCompra)}</td>
           <td data-label="Valor histórico" class="mono">${fmtMoney(c.valorTotal)}</td>
-        </tr>`).join("")}
+        </tr>`).join("") : `<tr><td colspan="5"><div class="empty">Ningún cliente en riesgo actualmente. 🎉</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -1237,7 +1237,24 @@ function empresaPerfil(e){
   <div class="modal-head"><h3>${e.nombre}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
     <p style="color:var(--muted);margin-top:0;">${e.industria} · ${e.ciudad}, ${e.pais}</p>
-    <div class="section-title">Contactos</div>
+    <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Contactos</span>
+      <button class="btn btn-sm" id="btnAgregarContacto" data-empresa="${e.id}">+ Agregar contacto</button>
+    </div>
+    <div id="contactoQuickAdd" style="display:none;margin-bottom:10px;">
+      <div class="form-grid">
+        <div class="field"><label>Nombre</label><input id="ct_nombre"></div>
+        <div class="field"><label>Apellido</label><input id="ct_apellido"></div>
+        <div class="field"><label>Cargo</label><input id="ct_cargo"></div>
+        <div class="field"><label>Email</label><input type="email" id="ct_email"></div>
+        <div class="field"><label>Teléfono</label><input id="ct_telefono"></div>
+        <div class="field"><label>&nbsp;</label><label style="display:flex;align-items:center;gap:6px;font-weight:400;color:var(--text);"><input type="checkbox" id="ct_principal" style="width:auto;"> Contacto principal</label></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-sm btn-primary" id="btnGuardarContacto" data-empresa="${e.id}">Guardar contacto</button>
+        <button class="btn btn-sm" id="btnCancelarContacto">Cancelar</button>
+      </div>
+    </div>
     ${conts.map(c=>`
       <div class="card card-pad" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
         <div>
@@ -1246,7 +1263,26 @@ function empresaPerfil(e){
         </div>
       </div>`).join("") || `<div class="empty">Esta empresa aún no tiene contactos registrados.</div>`}
   </div>
-  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+  <div class="modal-foot">
+    <button class="btn" data-close>Cerrar</button>
+    <button class="btn btn-primary" id="btnEditarEmpresa" data-id="${e.id}">Editar empresa</button>
+  </div>`;
+}
+
+/* --------------------------- FORMULARIO EMPRESA (nueva o edición) --------------------------- */
+function empresaForm(empresa){
+  const e = empresa || {nombre:"", industria:"", ciudad:"", pais:"España"};
+  return `
+  <div class="modal-head"><h3>${empresa? "Editar empresa":"Nueva empresa"}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="field"><label>Nombre</label><input id="ne_nombre" value="${e.nombre}"></div>
+      <div class="field"><label>Industria / nicho</label><input id="ne_industria" value="${e.industria}"></div>
+      <div class="field"><label>Ciudad</label><input id="ne_ciudad" value="${e.ciudad}"></div>
+      <div class="field"><label>País</label><select id="ne_pais">${PAISES_TZ.map(p=>`<option value="${p.pais}" ${p.pais===e.pais?'selected':''}>${p.flag} ${p.pais}</option>`).join("")}</select></div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cancelar</button><button class="btn btn-primary" id="ne_save" data-id="${empresa? empresa.id:''}">${empresa? "Guardar cambios":"Guardar empresa"}</button></div>`;
 }
 
 /* --------------------------- PIPELINE (KANBAN) --------------------------- */
@@ -1475,18 +1511,7 @@ function bindViewEvents(){
     });
   });
   const btnNuevaEmpresa = document.getElementById("btnNuevaEmpresa");
-  if(btnNuevaEmpresa) btnNuevaEmpresa.addEventListener("click", ()=> openModal(`
-    <div class="modal-head"><h3>Nueva empresa</h3><button class="close-x" data-close>✕</button></div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="field"><label>Nombre</label><input id="ne_nombre"></div>
-        <div class="field"><label>Industria</label><input id="ne_industria"></div>
-        <div class="field"><label>Ciudad</label><input id="ne_ciudad"></div>
-        <div class="field"><label>País</label><input id="ne_pais" value="Panamá"></div>
-      </div>
-    </div>
-    <div class="modal-foot"><button class="btn" data-close>Cancelar</button><button class="btn btn-primary" id="ne_save">Guardar empresa</button></div>
-  `));
+  if(btnNuevaEmpresa) btnNuevaEmpresa.addEventListener("click", ()=> openModal(empresaForm()));
 
   // OPORTUNIDADES (tabla)
   const btnNuevaOp = document.getElementById("btnNuevaOp");
@@ -1801,10 +1826,61 @@ function bindModalEvents(){
     neSave.addEventListener("click", ()=>{
       const nombre = document.getElementById("ne_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
-      DB.empresas.push({id:uid(), nombre, industria: document.getElementById("ne_industria").value, ciudad: document.getElementById("ne_ciudad").value, pais: document.getElementById("ne_pais").value});
-      save(); toast("Empresa creada"); closeModal(); renderView();
+      const id = neSave.dataset.id;
+      const data = {
+        nombre,
+        industria: document.getElementById("ne_industria").value,
+        ciudad: document.getElementById("ne_ciudad").value,
+        pais: document.getElementById("ne_pais").value,
+      };
+      if(id){
+        Object.assign(DB.empresas.find(e=>e.id===id), data);
+        toast("Empresa actualizada");
+      }else{
+        DB.empresas.push({...data, id:uid()});
+        toast("Empresa creada");
+      }
+      save(); closeModal(); renderView();
     });
   }
+
+  // Editar empresa desde su perfil
+  const btnEditarEmpresa = document.getElementById("btnEditarEmpresa");
+  if(btnEditarEmpresa) btnEditarEmpresa.addEventListener("click", ()=>{
+    const e = DB.empresas.find(x=>x.id===btnEditarEmpresa.dataset.id);
+    if(e) openModal(empresaForm(e));
+  });
+
+  // Agregar contacto a una empresa (desde su perfil)
+  const btnAgregarContacto = document.getElementById("btnAgregarContacto");
+  if(btnAgregarContacto) btnAgregarContacto.addEventListener("click", ()=>{
+    document.getElementById("contactoQuickAdd").style.display = "block";
+    btnAgregarContacto.style.display = "none";
+  });
+  const btnCancelarContacto = document.getElementById("btnCancelarContacto");
+  if(btnCancelarContacto) btnCancelarContacto.addEventListener("click", ()=>{
+    document.getElementById("contactoQuickAdd").style.display = "none";
+    if(btnAgregarContacto) btnAgregarContacto.style.display = "inline-block";
+  });
+  const btnGuardarContacto = document.getElementById("btnGuardarContacto");
+  if(btnGuardarContacto) btnGuardarContacto.addEventListener("click", ()=>{
+    const nombre = document.getElementById("ct_nombre").value.trim();
+    if(!nombre){ toast("El nombre del contacto es obligatorio", true); return; }
+    const empresaId = btnGuardarContacto.dataset.empresa;
+    const nuevo = {
+      id: uid(), empresaId,
+      nombre, apellido: document.getElementById("ct_apellido").value,
+      cargo: document.getElementById("ct_cargo").value,
+      email: document.getElementById("ct_email").value,
+      telefono: document.getElementById("ct_telefono").value,
+      principal: document.getElementById("ct_principal").checked,
+    };
+    DB.contactos.push(nuevo);
+    save();
+    toast("Contacto agregado");
+    const e = DB.empresas.find(x=>x.id===empresaId);
+    openModal(empresaPerfil(e));
+  });
 
   // Guardar oportunidad (nueva o edición)
   const saveOpBtn = document.getElementById("saveOp");
