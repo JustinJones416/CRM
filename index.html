@@ -137,7 +137,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
 
 /* modal */
-.modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:3000;padding:16px;}
 .modal-bg.active{display:flex;}
 .modal{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
@@ -151,7 +151,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .field input,.field select,.field textarea{width:100%;}
 
 /* toast */
-.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:3100;display:flex;flex-direction:column;gap:8px;}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40;display:none;}
 .overlay.active{display:block;}
 .toast{background:var(--ink2);color:#fff;padding:11px 16px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;animation:slidein .2s ease;min-width:220px;}
@@ -370,7 +370,6 @@ function seedData(){
   return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
 }
 
-let DB = load();
 function load(){
   let raw = null;
   try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){ /* localStorage no disponible (ej. file://) */ }
@@ -391,7 +390,37 @@ function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }ca
    Sin esto, los prospectos/clientes guardados ANTES de esa mejora se quedan con la
    estructura vieja para siempre — por eso el mapa se veía vacío y el dashboard parecía
    "no actualizarse": no era un problema de tiempo real, era un dato viejo sin migrar. */
+/* ---------------------------- LIMPIEZA DE DATOS DE DEMOSTRACIÓN ---------------------------- */
+/* Antes esta herramienta traía datos ficticios (Camila Torres, Ferretería del Istmo, etc.)
+   para mostrar cómo se veía el CRM. Cambiar el código fuente NO borra lo que el navegador
+   ya guardó en localStorage — por eso esos registros seguían apareciendo. Esta función los
+   identifica por firma exacta (ids/emails/títulos que solo existieron en los datos de ejemplo)
+   y los elimina, sin tocar ningún dato real que el equipo haya cargado.
+   Se ejecuta en cada carga; es inofensiva si ya no quedan rastros de esos datos. */
+const DEMO_EMPRESA_IDS = ["e1","e2","e3"];
+const DEMO_CONTACTO_IDS = ["c1","c2","c3"];
+const DEMO_CLIENTE_IDS = ["cl1","cl2","cl3"];
+const DEMO_LEAD_EMAILS = ["camila@tboquete.com","eduarte@andinotextil.com","rvega@sanrafael.com","lfermin@ferreisto.com","amolina@cmolina.com","therrera@importh.com","pgomez@andinotextil.com"];
+const DEMO_OP_TITULOS = ["Renovación anual — Ferretería del Istmo","Consultoría implementación textil","Soporte Premium — San Rafael","Licencia Starter — Comercial Molina","Plan corporativo — Import Herrera","Licencia Starter — Textiles Boquete","Ampliación soporte — Andino Textil","Plan Starter — prospecto frío"];
+const DEMO_ACT_TITULOS = ["Llamar a Camila Torres para calificar presupuesto","Seguimiento cotización — Grupo Andino Textil","Reunión de cierre — Ferretería del Istmo","Seguimiento de propuesta — Hotel Vista Andina","Reunión de cierre — Restaurante El Bistró"];
+const DEMO_VENDEDORES = {v1:"Julieta Ríos", v2:"Marco Ábrego", v3:"Diana Cedeño"};
+
+function purgeDemoData(db){
+  db.empresas = (db.empresas||[]).filter(e=> !DEMO_EMPRESA_IDS.includes(e.id));
+  db.contactos = (db.contactos||[]).filter(c=> !DEMO_CONTACTO_IDS.includes(c.id));
+  db.clientes = (db.clientes||[]).filter(c=> !DEMO_CLIENTE_IDS.includes(c.id));
+  db.leads = (db.leads||[]).filter(l=> !DEMO_LEAD_EMAILS.includes(l.email));
+  db.oportunidades = (db.oportunidades||[]).filter(o=>
+    !DEMO_CLIENTE_IDS.includes(o.clienteId) && !DEMO_EMPRESA_IDS.includes(o.empresaId) && !DEMO_OP_TITULOS.includes(o.nombre)
+  );
+  db.actividades = (db.actividades||[]).filter(a=> !DEMO_ACT_TITULOS.includes(a.titulo));
+  // Solo se elimina un vendedor de ejemplo si nadie le cambió el nombre (si lo editaron, es uso real).
+  db.vendedores = (db.vendedores||[]).filter(v=> !(DEMO_VENDEDORES[v.id] && DEMO_VENDEDORES[v.id]===v.nombre));
+  return db;
+}
+
 function migrateDB(db){
+  db = purgeDemoData(db);
   db.leads = (db.leads||[]).map(l=>({
     pais: "", colaboradores: 0, nicho: "Otro", falencia: "",
     puntosEncaje: 0, estado: "nuevo", motivoDescarte: "",
@@ -428,6 +457,11 @@ function migrateDB(db){
   }
   return db;
 }
+
+/* Se invoca aquí, DESPUÉS de todas las constantes y funciones que necesita (migrateDB,
+   purgeDemoData, DEMO_*), para evitar un error de "acceso antes de inicialización" en
+   JavaScript que antes hacía fallar la migración silenciosamente. */
+let DB = load();
 
 /* ---------------------------- RULES (centralizadas) ---------------------------- */
 function scoreLabel(puntuacion){
