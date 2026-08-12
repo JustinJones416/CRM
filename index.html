@@ -137,6 +137,12 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
 
 /* modal */
+.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--ink2),#0E1530);display:flex;align-items:center;justify-content:center;z-index:5000;padding:16px;}
+.auth-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.auth-tabs{display:flex;gap:4px;background:var(--paper);border-radius:10px;padding:4px;margin-bottom:18px;}
+.auth-tab{flex:1;border:none;background:transparent;padding:8px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;}
+.auth-tab.active{background:#fff;color:var(--ink2);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.auth-error{background:var(--red-soft);color:var(--red);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;}
 .modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:3000;padding:16px;}
 .modal-bg.active{display:flex;}
 .modal{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
@@ -204,10 +210,48 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
   td::before{content:attr(data-label);font-size:11px;color:var(--muted);font-weight:600;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-<div class="shell">
+<!-- ================= PANTALLA DE LOGIN ================= -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="brand" style="margin-bottom:22px;">
+      <div class="mark">N</div>
+      <div><div class="name">Nexo CRM</div><div class="sub">OMNICORE AI · ACCESO DEL EQUIPO</div></div>
+    </div>
+
+    <div id="authTabs" class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+      <button class="auth-tab" data-tab="signup">Crear cuenta</button>
+    </div>
+
+    <div id="authError" class="auth-error" style="display:none;"></div>
+
+    <form id="authForm">
+      <div class="field" style="margin-bottom:12px;">
+        <label>Correo</label>
+        <input type="email" id="auth_email" required placeholder="tunombre@omnicoreai.com" autocomplete="email">
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label>Contraseña</label>
+        <input type="password" id="auth_password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+      </div>
+      <div id="authSignupHint" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:14px;">
+        Se creará tu cuenta automáticamente en Supabase. Revisa tu correo si se requiere confirmación.
+      </div>
+      <button type="submit" class="btn btn-primary" id="authSubmitBtn" style="width:100%;margin-top:10px;justify-content:center;">Iniciar sesión</button>
+    </form>
+
+    <div id="authConfigWarning" class="auth-error" style="display:none;margin-top:14px;">
+      ⚠ Supabase no está configurado todavía. Un administrador debe completar <span class="mono">SUPABASE_URL</span> y <span class="mono">SUPABASE_ANON_KEY</span> al inicio del archivo. Ver <span class="mono">SUPABASE_SETUP.md</span>.
+      <div style="margin-top:10px;"><a href="#" id="bypassAuthLink" style="color:inherit;text-decoration:underline;">Continuar sin login por ahora →</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="appShell" style="display:none;">
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
@@ -226,7 +270,8 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
         <h1 id="viewTitle">Dashboard</h1>
       </div>
       <div class="right">
-        <span class="pill">Rol: Gerente Comercial</span>
+        <span class="pill" id="userEmailPill">—</span>
+        <button class="btn btn-sm" id="logoutBtn">Cerrar sesión</button>
         <div class="avatar">JR</div>
       </div>
     </div>
@@ -251,6 +296,18 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 ============================================================================ */
 
 /* ---------------------------- DATA LAYER ---------------------------- */
+/* ============================================================================
+   CONFIGURACIÓN DE SUPABASE (AUTENTICACIÓN)
+   ----------------------------------------------------------------------------
+   Completa estos dos valores después de crear tu proyecto en supabase.com
+   (Project Settings → API). Instrucciones completas en SUPABASE_SETUP.md.
+============================================================================ */
+const SUPABASE_URL = "https://yzpoahppdmgnyeglnxea.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_srBLJLsjyCzsN5T1VMT0Tw_IwZdQlYt"; // clave pública — segura para exponer en el navegador
+
+const supabaseConfigured = !SUPABASE_URL.includes("TU_SUPABASE_URL_AQUI") && !SUPABASE_ANON_KEY.includes("TU_SUPABASE_ANON_KEY_AQUI");
+const sb = supabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
 const STORAGE_KEY = "nexocrm_v1";
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
@@ -1994,19 +2051,124 @@ document.getElementById("overlay").addEventListener("click", ()=>{
   document.getElementById("overlay").classList.remove("active");
 });
 
-renderNav();
-renderView();
+function startApp(){
+  renderNav();
+  renderView();
+  /* Refresco en tiempo real: recalcula el Dashboard y Alertas cada 20s (tareas que vencen,
+     cambios hechos en otras vistas) sin interrumpir al usuario si hay un modal abierto o
+     está escribiendo en un formulario. */
+  setInterval(()=>{
+    const modalAbierto = document.getElementById("modalBg").classList.contains("active");
+    if(modalAbierto) return;
+    if(currentView==="dashboard" || currentView==="alertas"){
+      renderView();
+    }
+  }, 20000);
+}
 
-/* Refresco en tiempo real: recalcula el Dashboard y Alertas cada 20s (tareas que vencen,
-   cambios hechos en otras vistas) sin interrumpir al usuario si hay un modal abierto o
-   está escribiendo en un formulario. */
-setInterval(()=>{
-  const modalAbierto = document.getElementById("modalBg").classList.contains("active");
-  if(modalAbierto) return;
-  if(currentView==="dashboard" || currentView==="alertas"){
-    renderView();
+function showApp(userEmail){
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appShell").style.display = "";
+  const pill = document.getElementById("userEmailPill");
+  if(pill) pill.textContent = userEmail || "Modo local";
+  startApp();
+}
+
+function showAuthScreen(){
+  document.getElementById("authScreen").style.display = "flex";
+  document.getElementById("appShell").style.display = "none";
+}
+
+/* ============================================================================
+   AUTENTICACIÓN — correo + contraseña vía Supabase Auth.
+   signUp() crea la cuenta automáticamente en Supabase (auth.users) sin pasos
+   manuales. Editar/eliminar usuarios se hace desde el panel de Supabase
+   (Authentication → Users) — nunca desde este archivo, por seguridad: hacerlo
+   desde el navegador requeriría exponer una clave maestra a cualquiera que
+   abra el CRM. Ver SUPABASE_SETUP.md.
+============================================================================ */
+let authMode = "login"; // "login" | "signup"
+
+function setAuthError(msg){
+  const el = document.getElementById("authError");
+  if(!msg){ el.style.display = "none"; el.textContent = ""; return; }
+  el.style.display = "block";
+  el.textContent = msg;
+}
+
+document.querySelectorAll(".auth-tab").forEach(tab=>{
+  tab.addEventListener("click", ()=>{
+    authMode = tab.dataset.tab;
+    document.querySelectorAll(".auth-tab").forEach(t=> t.classList.toggle("active", t===tab));
+    document.getElementById("authSubmitBtn").textContent = authMode==="signup" ? "Crear cuenta" : "Iniciar sesión";
+    document.getElementById("authSignupHint").style.display = authMode==="signup" ? "block" : "none";
+    setAuthError(null);
+  });
+});
+
+if(!supabaseConfigured){
+  document.getElementById("authConfigWarning").style.display = "block";
+  document.getElementById("authSubmitBtn").disabled = true;
+  document.getElementById("bypassAuthLink").addEventListener("click", (e)=>{
+    e.preventDefault();
+    showApp(null);
+  });
+}
+
+document.getElementById("authForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  setAuthError(null);
+  if(!supabaseConfigured) return;
+  const email = document.getElementById("auth_email").value.trim();
+  const password = document.getElementById("auth_password").value;
+  const btn = document.getElementById("authSubmitBtn");
+  btn.disabled = true;
+  const textoOriginal = btn.textContent;
+  btn.textContent = "Un momento...";
+  try{
+    if(authMode==="signup"){
+      const {data, error} = await sb.auth.signUp({email, password});
+      if(error) throw error;
+      if(data.user && !data.session){
+        setAuthError("Cuenta creada. Revisa tu correo para confirmar el acceso antes de iniciar sesión.");
+        btn.disabled = false; btn.textContent = textoOriginal;
+        return;
+      }
+      // Si la confirmación por correo está desactivada en el proyecto, Supabase ya entrega sesión activa
+      showApp(data.user?.email);
+    }else{
+      const {data, error} = await sb.auth.signInWithPassword({email, password});
+      if(error) throw error;
+      showApp(data.user?.email);
+    }
+  }catch(err){
+    const mensajes = {
+      "Invalid login credentials": "Correo o contraseña incorrectos.",
+      "User already registered": "Ya existe una cuenta con ese correo. Inicia sesión en su lugar.",
+      "email rate limit exceeded": "Se alcanzó el límite de correos de Supabase por ahora (plan gratuito). Espera unos minutos e intenta de nuevo, o inicia sesión si la cuenta ya se creó.",
+      "Password should be at least 6 characters": "La contraseña debe tener al menos 6 caracteres.",
+    };
+    setAuthError(mensajes[err.message] || err.message || "Ocurrió un error. Intenta de nuevo.");
+    btn.disabled = false; btn.textContent = textoOriginal;
   }
-}, 20000);
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async ()=>{
+  if(supabaseConfigured) await sb.auth.signOut();
+  showAuthScreen();
+});
+
+/* Al cargar: si Supabase está configurado, revisa si ya hay una sesión activa
+   (el usuario cerró el navegador y volvió, por ejemplo) y entra directo. */
+(async function initAuth(){
+  if(!supabaseConfigured){ showAuthScreen(); return; }
+  const {data: {session}} = await sb.auth.getSession();
+  if(session){ showApp(session.user.email); }
+  else{ showAuthScreen(); }
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event === "SIGNED_OUT"){ showAuthScreen(); }
+  });
+})();
 
 </script>
 </body>
