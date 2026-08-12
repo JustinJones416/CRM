@@ -51,7 +51,9 @@ a{color:inherit;}
 .navitem.active .tag{background:rgba(255,255,255,.2);color:#fff;}
 
 .main{min-width:0;}
-.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;position:sticky;top:0;z-index:20;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 22px;position:sticky;top:0;z-index:20;overflow:hidden;}
+.right{display:flex;align-items:center;gap:8px;flex-shrink:1;min-width:0;overflow:hidden;}
+.btn-label-mobile{display:none;}
 .topbar h1{font-size:16px;margin:0;font-weight:700;}
 .topbar .right{display:flex;align-items:center;gap:14px;}
 .pill{font-size:11.5px;background:var(--info-soft);color:var(--info);padding:5px 10px;border-radius:20px;font-weight:600;}
@@ -208,6 +210,13 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
   tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px 0;background:#fff;}
   td{border:none;padding:6px 14px;display:flex;justify-content:space-between;gap:10px;}
   td::before{content:attr(data-label);font-size:11px;color:var(--muted);font-weight:600;}
+  #userEmailPill{display:none;}
+  #addPasskeyBtn .btn-label{display:none;}
+  #logoutBtn .btn-label{display:none;}
+  .btn-label-mobile{display:inline;}
+  #addPasskeyBtn, #logoutBtn{padding:7px 9px;}
+  .topbar{padding:0 10px;}
+  .right{gap:6px;}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -276,8 +285,8 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
       </div>
       <div class="right">
         <span class="pill" id="userEmailPill">—</span>
-        <button class="btn btn-sm" id="addPasskeyBtn" title="Agregar un passkey para iniciar sesión sin contraseña">🔑 Agregar passkey</button>
-        <button class="btn btn-sm" id="logoutBtn">Cerrar sesión</button>
+        <button class="btn btn-sm" id="addPasskeyBtn" title="Agregar un passkey para iniciar sesión sin contraseña">🔑<span class="btn-label"> Agregar passkey</span></button>
+        <button class="btn btn-sm" id="logoutBtn" title="Cerrar sesión"><span class="btn-label">Cerrar sesión</span><span class="btn-label-mobile">⏻</span></button>
         <div class="avatar">JR</div>
       </div>
     </div>
@@ -316,9 +325,35 @@ const sb = supabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPAB
   auth: { experimental: { passkey: true } } // requiere @supabase/supabase-js v2.105+ y HTTPS en un dominio real
 }) : null;
 
+/* ============================================================================
+   CONFIGURACIÓN DE GOOGLE MAPS (opcional)
+   ----------------------------------------------------------------------------
+   El Mapa global funciona de fábrica con OpenStreetMap, sin costo ni llave.
+   Si tu red bloquea los servidores de OpenStreetMap (frecuente en redes de
+   oficina), completa esta llave para usar Google Maps en su lugar — tiene
+   capa gratuita amplia pero requiere una tarjeta registrada en Google Cloud.
+   Ver GOOGLE_MAPS_SETUP.md para el paso a paso.
+============================================================================ */
+const GOOGLE_MAPS_API_KEY = ""; // dejar vacío = usar OpenStreetMap (gratis, sin configuración)
+
 const STORAGE_KEY = "nexocrm_v1";
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
+
+/* Registra en la bitácora quién hizo cada acción relevante, usando el correo con el que
+   la persona inició sesión de verdad (no un campo elegido a mano) — así queda un historial
+   confiable de actividad por integrante del equipo. */
+function registrarActividad(accion, detalle){
+  if(!DB.registroActividad) DB.registroActividad = [];
+  DB.registroActividad.unshift({
+    id: uid(),
+    fecha: new Date().toISOString(),
+    autorEmail: currentUserEmail || null,
+    accion, detalle: detalle || "",
+  });
+  // Conservar solo los últimos 300 registros para no crecer indefinidamente en localStorage
+  if(DB.registroActividad.length > 300) DB.registroActividad.length = 300;
+}
 function todayISO(){ return new Date().toISOString(); }
 function daysAgo(iso){ return Math.floor((Date.now()-new Date(iso).getTime())/86400000); }
 /* Una tarea está vencida si sigue pendiente y su fecha ya pasó — se calcula siempre en vivo,
@@ -415,7 +450,7 @@ function seedData(){
   const oportunidades = [];
   const actividades = [];
   const vendedores = [];
-  return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, oportunidadesHistorial:[]};
+  return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, oportunidadesHistorial:[], registroActividad:[]};
 }
 
 function load(){
@@ -492,6 +527,7 @@ function migrateDB(db){
   db.empresas = (db.empresas||[]).map(e=>({ pais:"Panamá", ciudad:"", industria:"", ...e }));
   db.contactos = db.contactos || [];
   db.oportunidadesHistorial = db.oportunidadesHistorial || [];
+  db.registroActividad = db.registroActividad || [];
   // El equipo de vendedores antes venía fijo en el código (Julieta Ríos, Marco Ábrego, Diana Cedeño).
   // Si el usuario ya tenía datos guardados con esos IDs (v1/v2/v3), se preservan sus nombres para
   // que los registros existentes no se queden sin responsable asignado.
@@ -511,6 +547,32 @@ let DB = load();
 
 function vendedorNombre(id){ const v=DB.vendedores.find(x=>x.id===id); return v? v.nombre : "Sin asignar"; }
 
+/* ---------------------------- IDENTIDAD DEL USUARIO LOGUEADO ---------------------------- */
+/* Vincula la cuenta con la que inicia sesión (Supabase Auth) con un registro en el
+   Equipo (DB.vendedores) — así las acciones que hace cada persona quedan atribuidas
+   automáticamente a ella, en vez de tener que elegirse manualmente cada vez o quedar
+   como registros de "Equipo" sueltos sin relación con quién entró de verdad. */
+let currentUserEmail = null;
+let currentVendedorIdCache = null;
+function currentVendedorId(){ return currentVendedorIdCache; }
+
+function ensureVendedorForUser(email){
+  if(!email) return null;
+  currentUserEmail = email;
+  let v = DB.vendedores.find(x=> (x.email||"").toLowerCase()===email.toLowerCase());
+  if(!v){
+    const nombreSugerido = email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g, c=>c.toUpperCase());
+    v = {id: uid(), nombre: nombreSugerido, rol:"Closer", email};
+    DB.vendedores.push(v);
+    save();
+  }else if(!v.email){
+    v.email = email; // vincula retroactivamente un registro manual con la cuenta que acaba de entrar
+    save();
+  }
+  currentVendedorIdCache = v.id;
+  return v.id;
+}
+
 /* Convierte un prospecto en cliente. Función central reutilizada desde la tabla de
    Prospectos y desde el popup del Mapa global (los popups de Leaflet viven fuera del
    ciclo normal de eventos delegados, por eso también se expone en window). */
@@ -525,6 +587,7 @@ function convertirLeadACliente(leadId){
     notasSeguimiento: [{fecha: todayISO(), texto: `Convertido desde prospecto (${l.pais? paisInfo(l.pais)?.flag+' '+l.pais : 'sin país'})`, vendedorId: l.vendedorId}],
   });
   save();
+  registrarActividad("Convirtió prospecto a cliente", `${l.nombre} ${l.apellido} — ${l.empresaNombre||'sin empresa'}`);
   toast(`${l.nombre} ${l.apellido} convertido a cliente`);
   renderView();
 }
@@ -732,7 +795,7 @@ function viewDashboard(){
 
   <div class="section-title">Pipeline comercial</div>
   <div class="card card-pad">
-    <div style="display:flex;gap:6px;align-items:stretch;overflow-x:auto;">
+    <div style="display:flex;gap:6px;align-items:stretch;overflow-x:auto;width:100%;">
       ${etapasResumen.map((e,i)=>`
         <div class="clickable" data-goto="pipeline" style="flex:1;min-width:120px;text-align:center;position:relative;">
           <div style="background:${i<2?'var(--info-soft)': i<4?'var(--amber-soft)':'var(--accent-soft)'};border-radius:8px;padding:12px 8px;">
@@ -814,12 +877,19 @@ function viewEquipo(){
       const misLeads = DB.leads.filter(l=>l.vendedorId===v.id && l.estado!=="convertido" && l.estado!=="perdido" && l.estado!=="descartado").length;
       const misClientes = DB.clientes.filter(c=>c.vendedorId===v.id).length;
       const misVentas = DB.oportunidades.filter(o=>o.vendedorId===v.id && o.etapa==="ganado").reduce((a,o)=>a+o.valor,0);
+      const esUsuarioActual = currentUserEmail && v.email && v.email.toLowerCase()===currentUserEmail.toLowerCase();
+      const totalAcciones = v.email ? (DB.registroActividad||[]).filter(r=> r.autorEmail && v.email && r.autorEmail.toLowerCase()===v.email.toLowerCase()).length : 0;
       return `
       <div class="card card-pad">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
-            <b>${v.nombre}</b>
+            <b>${v.nombre}</b> ${esUsuarioActual? '<span class="badge badge-convertido">Tú</span>':''}
             <div style="color:var(--muted);font-size:12px;margin-top:2px;">${v.rol||"Closer"}</div>
+            <div style="margin-top:6px;">
+              ${v.email
+                ? `<span class="badge badge-calificado">🔗 ${v.email}</span>`
+                : `<span class="badge badge-baja">Sin cuenta vinculada</span>`}
+            </div>
           </div>
           <button class="btn btn-sm" data-editar-vendedor="${v.id}">Editar</button>
         </div>
@@ -828,20 +898,47 @@ function viewEquipo(){
           <div><b>${misClientes}</b><br><span style="color:var(--muted);">clientes</span></div>
           <div><b>${fmtMoney(misVentas)}</b><br><span style="color:var(--muted);">vendido</span></div>
         </div>
+        <button class="btn btn-sm" style="width:100%;margin-top:12px;" data-ver-actividad="${v.id}" ${!v.email?'disabled title="Vincula un correo primero para poder rastrear su actividad"':''}>📋 Ver actividad (${totalAcciones})</button>
       </div>`;
     }).join("")}
   </div>` : `<div class="card"><div class="empty"><div class="big">👥</div>Aún no hay integrantes en el equipo. Agrega a los closers que van a usar el CRM para poder asignarles prospectos, clientes y tareas.</div></div>`}
   `;
 }
 
+/* --------------------------- BITÁCORA DE ACTIVIDAD POR INTEGRANTE --------------------------- */
+function actividadVendedorModal(vendedorId){
+  const v = DB.vendedores.find(x=>x.id===vendedorId);
+  const registros = (DB.registroActividad||[])
+    .filter(r=> r.autorEmail && v.email && r.autorEmail.toLowerCase()===v.email.toLowerCase())
+    .slice(0, 100);
+  return `
+  <div class="modal-head"><h3>Actividad de ${v.nombre}</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Registrado automáticamente según las acciones realizadas con la sesión ${v.email}.</p>
+    <div class="timeline">
+      ${registros.length? registros.map(r=>`
+        <div class="tl-item">
+          <div class="tl-date">${fmtDate(r.fecha)} · ${new Date(r.fecha).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="tl-title"><b>${r.accion}</b>${r.detalle? ` — ${r.detalle}`:''}</div>
+        </div>`).join("") : `<div class="empty" style="padding:16px 0;">Sin actividad registrada todavía para esta cuenta.</div>`}
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+}
+
 function vendedorForm(vendedorId){
-  const v = vendedorId? DB.vendedores.find(x=>x.id===vendedorId) : {nombre:"", rol:"Closer"};
+  const v = vendedorId? DB.vendedores.find(x=>x.id===vendedorId) : {nombre:"", rol:"Closer", email:""};
   return `
   <div class="modal-head"><h3>${vendedorId? "Editar integrante":"Agregar integrante"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="field"><label>Nombre completo</label><input id="ve_nombre" value="${v.nombre}"></div>
       <div class="field"><label>Rol</label><select id="ve_rol">${["Closer","Gerente Comercial","Setter","Otro"].map(r=>`<option ${r===(v.rol||"Closer")?'selected':''}>${r}</option>`).join("")}</select></div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Correo de su cuenta de acceso (opcional)</label>
+        <input type="email" id="ve_email" value="${v.email||''}" placeholder="correo@omnicoreai.com">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Si coincide con el correo que usa para iniciar sesión, sus prospectos, clientes y ventas quedarán atribuidos automáticamente a él/ella.</div>
+      </div>
     </div>
   </div>
   <div class="modal-foot" style="flex-wrap:wrap;">
@@ -853,7 +950,7 @@ function vendedorForm(vendedorId){
 
 /* --------------------------- FORMULARIO DE TAREA (nueva / editar / completar) --------------------------- */
 function tareaForm(tareaId){
-  const t = tareaId? DB.actividades.find(x=>x.id===tareaId) : {tipo:"tarea", titulo:"", fecha: todayISO().slice(0,16), estado:"pendiente", vendedorId:(DB.vendedores[0]?.id||"")};
+  const t = tareaId? DB.actividades.find(x=>x.id===tareaId) : {tipo:"tarea", titulo:"", fecha: todayISO().slice(0,16), estado:"pendiente", vendedorId:(currentVendedorId()||DB.vendedores[0]?.id||"")};
   const fechaInput = t.fecha ? new Date(t.fecha).toISOString().slice(0,16) : "";
   return `
   <div class="modal-head"><h3>${tareaId? "Editar tarea":"Nueva tarea"}</h3><button class="close-x" data-close>✕</button></div>
@@ -970,7 +1067,7 @@ function googleCaptureForm(){
 }
 
 function leadForm(lead){
-  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:(DB.vendedores[0]?.id||""),prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
+  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:(currentVendedorId()||DB.vendedores[0]?.id||""),prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
   const enc = calcularEncaje(l);
   const descartado = lead && l.estado==="descartado";
   return `
@@ -1114,9 +1211,118 @@ function viewMapaGlobal(){
 
 const NICHO_ICONO = {"Restaurante":"🍽️","Hotel":"🏨","Clínica":"🏥","Otro":"🏢"};
 
+/* Calcula la lista de negocios a mostrar en el mapa, con su posición (con pequeño
+   desplazamiento si varios comparten país), color de encaje e ícono de nicho.
+   La usan ambos motores de mapa (Leaflet/OSM y Google Maps) para no duplicar lógica. */
+function getNegociosParaMapa(){
+  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais) && l.estado!=="descartado");
+  const porPais = {};
+  conPais.forEach(l=>{ (porPais[l.pais] = porPais[l.pais]||[]).push(l); });
+  const negocios = [];
+  Object.keys(porPais).forEach(paisNombre=>{
+    const p = paisInfo(paisNombre);
+    const leadsPais = porPais[paisNombre];
+    leadsPais.forEach((l, i)=>{
+      const angle = (2*Math.PI/Math.max(leadsPais.length,1)) * i;
+      const jitter = leadsPais.length>1 ? 0.6 : 0;
+      negocios.push({
+        l, paisNombre, p,
+        lat: p.lat + Math.sin(angle)*jitter,
+        lng: p.lng + Math.cos(angle)*jitter,
+        enc: calcularEncaje(l),
+        color: (()=>{ const e=calcularEncaje(l); return e.pts>=70?"#C6432A":e.pts>=40?"#B9791A":"#4C5FD5"; })(),
+        icono: NICHO_ICONO[l.nicho] || "🏢",
+      });
+    });
+  });
+  return negocios;
+}
+
+function popupHtmlPara(n){
+  const {l, enc, icono, paisNombre, p} = n;
+  return `
+    <div style="font-family:'Inter',sans-serif;min-width:230px;">
+      <b>${icono} ${l.empresaNombre||'Sin nombre de empresa'}</b>
+      <div style="font-size:11.5px;color:#6B7080;margin:2px 0 8px;">${p.flag} ${paisNombre} · <span class="mono" data-tz="${p.tz}">${horaLocal(paisNombre)}</span></div>
+      <div style="border-top:1px solid #E4E6EE;padding-top:6px;">
+        <b>${l.nombre} ${l.apellido}</b><br>
+        <span style="font-size:11.5px;">${l.nicho||'—'} · ${l.colaboradores||0} colaboradores · ${l.telefono||'sin teléfono'}</span><br>
+        <span style="font-size:11.5px;">Presupuesto: ${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'✓ en rango':'⚠ fuera de rango'}</span><br>
+        ${l.falencia? `<span style="font-size:11.5px;color:#B9791A;">Falencia: ${l.falencia}</span><br>`:''}
+        <span style="font-size:11.5px;font-weight:700;">Encaje: ${enc.pts} pts</span>
+      </div>
+      <div style="border-top:1px solid #E4E6EE;margin-top:8px;padding-top:8px;display:flex;gap:6px;">
+        <button class="btn btn-sm" style="flex:1;" onclick="window.editarDesdeMapa('${l.id}')">Editar</button>
+        ${l.estado!=="convertido"? `<button class="btn btn-sm btn-primary" style="flex:1;" onclick="window.convertirDesdeMapa('${l.id}')">Registrar como cliente</button>` : `<span class="badge badge-convertido" style="align-self:center;">Ya es cliente</span>`}
+      </div>
+    </div>`;
+}
+
+let googleMapsLoadPromise = null;
+function loadGoogleMaps(){
+  if(window.google && window.google.maps) return Promise.resolve();
+  if(googleMapsLoadPromise) return googleMapsLoadPromise;
+  googleMapsLoadPromise = new Promise((resolve, reject)=>{
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async`;
+    script.async = true;
+    script.onload = ()=> resolve();
+    script.onerror = ()=> reject(new Error("No se pudo cargar Google Maps (revisa la llave o el dominio autorizado)"));
+    document.head.appendChild(script);
+  });
+  return googleMapsLoadPromise;
+}
+
 function initMapaGlobal(){
   const el = document.getElementById("mapaMundi");
-  if(!el || typeof L === "undefined") return;
+  if(!el) return;
+  if(GOOGLE_MAPS_API_KEY){
+    loadGoogleMaps().then(initMapaGoogle).catch(err=>{
+      console.warn(err);
+      toast("No se pudo cargar Google Maps, usando OpenStreetMap como respaldo", true);
+      initMapaLeaflet();
+    });
+  }else{
+    initMapaLeaflet();
+  }
+}
+
+/* --------------------------- MOTOR: GOOGLE MAPS --------------------------- */
+function initMapaGoogle(){
+  const el = document.getElementById("mapaMundi");
+  const negocios = getNegociosParaMapa();
+  const map = new google.maps.Map(el, {center:{lat:20,lng:0}, zoom:2, streetViewControl:false, mapTypeControl:false});
+
+  if(!negocios.length) return;
+
+  const bounds = new google.maps.LatLngBounds();
+  let primerInfo = null;
+  negocios.forEach((n, i)=>{
+    const marker = new google.maps.Marker({
+      position: {lat:n.lat, lng:n.lng}, map,
+      title: n.l.empresaNombre || `${n.l.nombre} ${n.l.apellido}`,
+      label: {text:n.icono, fontSize:"15px"},
+    });
+    bounds.extend(marker.getPosition());
+    const info = new google.maps.InfoWindow({content: popupHtmlPara(n), maxWidth:280});
+    marker.addListener("click", ()=> info.open({map, anchor:marker}));
+    if(i===0) primerInfo = {info, marker};
+  });
+  map.fitBounds(bounds, 60);
+  if(negocios.length===1) map.setZoom(6);
+  if(primerInfo) primerInfo.info.open({map, anchor:primerInfo.marker});
+
+  setInterval(()=>{
+    document.querySelectorAll("[data-tz]").forEach(elx=>{
+      try{ elx.textContent = new Intl.DateTimeFormat("es",{hour:"2-digit",minute:"2-digit",second:"2-digit",timeZone:elx.dataset.tz}).format(new Date()); }catch(e){}
+    });
+  }, 1000);
+}
+
+/* --------------------------- MOTOR: LEAFLET / OPENSTREETMAP (por defecto) --------------------------- */
+function initMapaLeaflet(){
+  const el = document.getElementById("mapaMundi");
+  if(typeof L === "undefined") return;
   const map = L.map("mapaMundi", {worldCopyJump:true});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
@@ -1129,66 +1335,30 @@ function initMapaGlobal(){
   setTimeout(()=> map.invalidateSize(), 100);
   window.addEventListener("resize", ()=> map.invalidateSize());
 
-  const conPais = DB.leads.filter(l=>l.pais && paisInfo(l.pais) && l.estado!=="descartado");
+  const negocios = getNegociosParaMapa();
 
-  if(!conPais.length){
+  if(!negocios.length){
     map.setView([20,0], 2);
     L.control.attribution({prefix:false}).addTo(map);
     return;
   }
 
-  // Agrupar por país solo para el color/tamaño del halo; cada negocio recibe su propio marcador
-  const porPais = {};
-  conPais.forEach(l=>{ (porPais[l.pais] = porPais[l.pais]||[]).push(l); });
-
   const bounds = [];
   const markers = [];
 
-  Object.keys(porPais).forEach(paisNombre=>{
-    const p = paisInfo(paisNombre);
-    const leadsPais = porPais[paisNombre];
-
-    // Distribuir los negocios de un mismo país en pequeño círculo alrededor del punto central
-    leadsPais.forEach((l, i)=>{
-      const angle = (2*Math.PI/Math.max(leadsPais.length,1)) * i;
-      const jitter = leadsPais.length>1 ? 0.6 : 0;
-      const lat = p.lat + Math.sin(angle)*jitter;
-      const lng = p.lng + Math.cos(angle)*jitter;
-      const enc = calcularEncaje(l);
-      const color = enc.pts>=70? "#C6432A" : enc.pts>=40? "#B9791A" : "#4C5FD5";
-      const icono = NICHO_ICONO[l.nicho] || "🏢";
-
-      const divIcon = L.divIcon({
-        className: "",
-        html: `<div style="background:${color};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">
-                 <span style="transform:rotate(45deg);font-size:16px;">${icono}</span>
-               </div>`,
-        iconSize: [34,34], iconAnchor: [17,34], popupAnchor:[0,-32]
-      });
-      const marker = L.marker([lat,lng], {icon: divIcon}).addTo(map);
-      bounds.push([lat,lng]);
-      markers.push(marker);
-
-      marker.bindTooltip(`<b>${l.empresaNombre||l.nombre+' '+l.apellido}</b> · ${l.nicho||'—'}`, {direction:"top", offset:[0,-30]});
-
-      const popupHtml = `
-        <div style="font-family:'Inter',sans-serif;min-width:230px;">
-          <b>${icono} ${l.empresaNombre||'Sin nombre de empresa'}</b>
-          <div style="font-size:11.5px;color:#6B7080;margin:2px 0 8px;">${p.flag} ${paisNombre} · <span class="mono" data-tz="${p.tz}">${horaLocal(paisNombre)}</span></div>
-          <div style="border-top:1px solid #E4E6EE;padding-top:6px;">
-            <b>${l.nombre} ${l.apellido}</b><br>
-            <span style="font-size:11.5px;">${l.nicho||'—'} · ${l.colaboradores||0} colaboradores · ${l.telefono||'sin teléfono'}</span><br>
-            <span style="font-size:11.5px;">Presupuesto: ${fmtMoney(l.presupuesto)} ${encajaPresupuesto(l.presupuesto)?'✓ en rango':'⚠ fuera de rango'}</span><br>
-            ${l.falencia? `<span style="font-size:11.5px;color:#B9791A;">Falencia: ${l.falencia}</span><br>`:''}
-            <span style="font-size:11.5px;font-weight:700;">Encaje: ${enc.pts} pts</span>
-          </div>
-          <div style="border-top:1px solid #E4E6EE;margin-top:8px;padding-top:8px;display:flex;gap:6px;">
-            <button class="btn btn-sm" style="flex:1;" onclick="window.editarDesdeMapa('${l.id}')">Editar</button>
-            ${l.estado!=="convertido"? `<button class="btn btn-sm btn-primary" style="flex:1;" onclick="window.convertirDesdeMapa('${l.id}')">Registrar como cliente</button>` : `<span class="badge badge-convertido" style="align-self:center;">Ya es cliente</span>`}
-          </div>
-        </div>`;
-      marker.bindPopup(popupHtml, {maxWidth:280});
+  negocios.forEach(n=>{
+    const divIcon = L.divIcon({
+      className: "",
+      html: `<div style="background:${n.color};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">
+               <span style="transform:rotate(45deg);font-size:16px;">${n.icono}</span>
+             </div>`,
+      iconSize: [34,34], iconAnchor: [17,34], popupAnchor:[0,-32]
     });
+    const marker = L.marker([n.lat,n.lng], {icon: divIcon}).addTo(map);
+    bounds.push([n.lat,n.lng]);
+    markers.push(marker);
+    marker.bindTooltip(`<b>${n.l.empresaNombre||n.l.nombre+' '+n.l.apellido}</b> · ${n.l.nicho||'—'}`, {direction:"top", offset:[0,-30]});
+    marker.bindPopup(popupHtmlPara(n), {maxWidth:280});
   });
 
   // Encuadrar el mapa automáticamente para mostrar todos los negocios cargados
@@ -1251,7 +1421,7 @@ function viewClientes(){
 
 /* --------------------------- FORMULARIO CLIENTE (nuevo o edición) --------------------------- */
 function clienteForm(cliente){
-  const c = cliente || {nombre:"",empresaId:"",segmento:"PyME",vendedorId:(DB.vendedores[0]?.id||""),riesgo:"bajo",valorTotal:0,ticketPromedio:0,compras:0,ultimaCompra:todayISO()};
+  const c = cliente || {nombre:"",empresaId:"",segmento:"PyME",vendedorId:(currentVendedorId()||DB.vendedores[0]?.id||""),riesgo:"bajo",valorTotal:0,ticketPromedio:0,compras:0,ultimaCompra:todayISO()};
   return `
   <div class="modal-head"><h3>${cliente? "Editar cliente":"Nuevo cliente"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -1460,7 +1630,10 @@ function viewOportunidades(){
   return `
   <div class="toolbar">
     <div class="search-box"><input type="text" placeholder="Buscar oportunidad..."></div>
-    <button class="btn btn-primary" id="btnNuevaOp">+ Nueva oportunidad</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn" id="btnRegistrarVenta" style="border-color:var(--accent);color:var(--accent);">✓ Registrar venta</button>
+      <button class="btn btn-primary" id="btnNuevaOp">+ Nueva oportunidad</button>
+    </div>
   </div>
   <div class="card">
     <div class="table-wrap">
@@ -1495,13 +1668,27 @@ function viewOportunidades(){
    FORMULARIO — OPORTUNIDAD (nueva o edición)
 ============================================================================ */
 function oportunidadForm(op){
-  const o = op || {nombre:"", empresaId:"", vendedorId:(DB.vendedores[0]?.id||""), valor:"", etapa:"nuevo", probabilidad:20, estadoAgenteIA:ESTADOS_AGENTE_IA[0]};
+  const o = op || {nombre:"", empresaId:"", vendedorId:(currentVendedorId()||""), valor:"", etapa:"nuevo", probabilidad:20, estadoAgenteIA:ESTADOS_AGENTE_IA[0]};
   return `
   <div class="modal-head"><h3>${op? "Editar oportunidad":"Nueva oportunidad"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="field"><label>Nombre de la oportunidad</label><input id="op_nombre" value="${o.nombre}"></div>
-      <div class="field"><label>Empresa</label><select id="op_empresa"><option value="">— Sin empresa —</option>${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===o.empresaId?'selected':''}>${e.nombre}</option>`).join("")}</select></div>
+      <div class="field">
+        <label>Empresa</label>
+        <select id="op_empresa">
+          <option value="">— Sin empresa —</option>
+          ${DB.empresas.map(e=>`<option value="${e.id}" ${e.id===o.empresaId?'selected':''}>${e.nombre}</option>`).join("")}
+          <option value="__nueva__">+ Crear nueva empresa...</option>
+        </select>
+      </div>
+      <div class="field" id="op_empresa_nueva_box" style="display:none;grid-column:1/-1;">
+        <label>Nombre de la nueva empresa</label>
+        <div style="display:flex;gap:8px;">
+          <input id="op_empresa_nueva" placeholder="Ej: Restaurante La Marina" style="flex:1;">
+          <button type="button" class="btn btn-sm" id="op_empresa_nueva_cancelar">Cancelar</button>
+        </div>
+      </div>
       <div class="field"><label>Vendedor asignado</label><select id="op_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===o.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
       <div class="field"><label>Valor estimado ($)</label><input type="number" id="op_valor" value="${o.valor}"></div>
       <div class="field"><label>Etapa comercial</label><select id="op_etapa">${ETAPAS.map(et=>`<option value="${et}" ${et===o.etapa?'selected':''}>${ETAPA_LABEL[et]}</option>`).join("")}</select></div>
@@ -1547,6 +1734,9 @@ function bindViewEvents(){
   if(btnNuevoVendedor) btnNuevoVendedor.addEventListener("click", ()=> openModal(vendedorForm()));
   document.querySelectorAll("[data-editar-vendedor]").forEach(btn=>{
     btn.addEventListener("click", ()=> openModal(vendedorForm(btn.dataset.editarVendedor)));
+  });
+  document.querySelectorAll("[data-ver-actividad]").forEach(btn=>{
+    btn.addEventListener("click", ()=> openModal(actividadVendedorModal(btn.dataset.verActividad)));
   });
 
   // Filas de prospecto clicables en cualquier vista (Prospectos, Mapa global)
@@ -1617,6 +1807,15 @@ function bindViewEvents(){
   // OPORTUNIDADES (tabla)
   const btnNuevaOp = document.getElementById("btnNuevaOp");
   if(btnNuevaOp) btnNuevaOp.addEventListener("click", ()=> openModal(oportunidadForm()));
+  const btnRegistrarVenta = document.getElementById("btnRegistrarVenta");
+  if(btnRegistrarVenta) btnRegistrarVenta.addEventListener("click", ()=>{
+    openModal(oportunidadForm());
+    // Preconfigura el formulario como una venta ya cerrada, atribuida a quien tiene la sesión iniciada
+    const etapaSel = document.getElementById("op_etapa");
+    const probInp = document.getElementById("op_prob");
+    if(etapaSel) etapaSel.value = "ganado";
+    if(probInp) probInp.value = 100;
+  });
   document.querySelectorAll("[data-op-row]").forEach(row=>{
     row.addEventListener("click", ()=>{
       const o = DB.oportunidades.find(x=>x.id===row.dataset.opRow);
@@ -1653,11 +1852,17 @@ function bindModalEvents(){
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = saveVendedorBtn.dataset.id;
       const rol = document.getElementById("ve_rol").value;
+      const email = document.getElementById("ve_email").value.trim();
+      if(email && DB.vendedores.some(v=>v.id!==id && (v.email||"").toLowerCase()===email.toLowerCase())){
+        toast("Ese correo ya está vinculado a otro integrante del equipo", true); return;
+      }
       if(id){
-        Object.assign(DB.vendedores.find(v=>v.id===id), {nombre, rol});
+        Object.assign(DB.vendedores.find(v=>v.id===id), {nombre, rol, email});
+        registrarActividad("Editó integrante del equipo", nombre);
         toast("Integrante actualizado");
       }else{
-        DB.vendedores.push({id: uid(), nombre, rol});
+        DB.vendedores.push({id: uid(), nombre, rol, email});
+        registrarActividad("Agregó integrante al equipo", nombre);
         toast("Integrante agregado al equipo");
       }
       save(); closeModal(); renderView();
@@ -1695,9 +1900,11 @@ function bindModalEvents(){
       };
       if(id){
         Object.assign(DB.actividades.find(a=>a.id===id), data);
+        registrarActividad("Editó tarea", data.titulo);
         toast("Tarea actualizada");
       }else{
         DB.actividades.unshift({...data, id:uid()});
+        registrarActividad("Creó tarea", data.titulo);
         toast("Tarea creada");
       }
       save(); closeModal(); renderView();
@@ -1708,7 +1915,9 @@ function bindModalEvents(){
     const a = DB.actividades.find(x=>x.id===btnCompletarTarea.dataset.id);
     if(!a) return;
     a.estado = "completada";
-    save(); toast("Tarea marcada como completada"); closeModal(); renderView();
+    save();
+    registrarActividad("Completó tarea", a.titulo);
+    toast("Tarea marcada como completada"); closeModal(); renderView();
   });
   const btnEliminarTarea = document.getElementById("btnEliminarTarea");
   if(btnEliminarTarea) btnEliminarTarea.addEventListener("click", ()=>{
@@ -1735,9 +1944,11 @@ function bindModalEvents(){
       };
       if(id){
         Object.assign(DB.clientes.find(c=>c.id===id), data);
+        registrarActividad("Editó cliente", data.nombre);
         toast("Cliente actualizado");
       }else{
         DB.clientes.push({...data, id:uid(), ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]});
+        registrarActividad("Creó cliente", data.nombre);
         toast("Cliente creado");
       }
       save(); closeModal(); renderView();
@@ -1771,6 +1982,7 @@ function bindModalEvents(){
     if(!c.notasSeguimiento) c.notasSeguimiento = [];
     c.notasSeguimiento.push({fecha: todayISO(), texto, vendedorId: c.vendedorId});
     save();
+    registrarActividad("Agregó nota de seguimiento", `${c.nombre} — ${texto.slice(0,60)}`);
     toast("Nota de seguimiento guardada");
     openModal(clientePerfil(c));
   });
@@ -1789,6 +2001,7 @@ function bindModalEvents(){
       l.estado = "descartado";
       l.motivoDescarte = nota? `${motivo} — ${nota}` : motivo;
       save();
+      registrarActividad("Descartó prospecto", `${l.nombre} ${l.apellido} — ${motivo}`);
       toast(`${l.nombre} ${l.apellido} descartado`);
       closeModal(); renderView();
     });
@@ -1803,6 +2016,7 @@ function bindModalEvents(){
       l.estado = "nuevo";
       l.motivoDescarte = "";
       save();
+      registrarActividad("Reactivó prospecto", `${l.nombre} ${l.apellido}`);
       toast(`${l.nombre} ${l.apellido} reactivado`);
       closeModal(); renderView();
     });
@@ -1853,6 +2067,7 @@ function bindModalEvents(){
       });
       l.estado = l.estado==="nuevo" ? "contactado" : l.estado;
       save();
+      registrarActividad("Agendó reunión", `${l.nombre} ${l.apellido} — ${fmtDate(fechaISO)}`);
       toast(`Reunión agendada con ${l.nombre} ${l.apellido} para el ${fmtDate(fechaISO)}`);
       closeModal(); renderView();
     });
@@ -1877,7 +2092,7 @@ function bindModalEvents(){
         nicho: document.getElementById("gc_nicho").value,
         falencia: document.getElementById("gc_falencia").value,
         fuente: document.getElementById("gc_fuente").value,
-        vendedorId: (DB.vendedores[0]?.id||""),
+        vendedorId: (currentVendedorId()||DB.vendedores[0]?.id||""),
         productoInteres: "",
         presupuesto: 0,
         prioridad: "media",
@@ -1891,6 +2106,7 @@ function bindModalEvents(){
       nuevo.puntosEncaje = calcularEncaje(nuevo).pts;
       DB.leads.unshift(nuevo);
       save();
+      registrarActividad("Captó prospecto desde Google", empresa);
       toast(`${empresa} capturado desde Google`);
       closeModal(); renderView();
     });
@@ -1944,9 +2160,11 @@ function bindModalEvents(){
       data.puntosEncaje = enc.pts;
       if(id){
         Object.assign(DB.leads.find(l=>l.id===id), data);
+        registrarActividad("Editó prospecto", `${data.nombre} ${data.apellido} — ${data.empresaNombre||'sin empresa'}`);
         toast("Prospecto actualizado");
       }else{
         DB.leads.unshift({...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()});
+        registrarActividad("Creó prospecto", `${data.nombre} ${data.apellido} — ${data.empresaNombre||'sin empresa'}`);
         toast("Prospecto creado");
       }
       save(); closeModal(); renderView();
@@ -1968,9 +2186,11 @@ function bindModalEvents(){
       };
       if(id){
         Object.assign(DB.empresas.find(e=>e.id===id), data);
+        registrarActividad("Editó empresa", data.nombre);
         toast("Empresa actualizada");
       }else{
         DB.empresas.push({...data, id:uid()});
+        registrarActividad("Creó empresa", data.nombre);
         toast("Empresa creada");
       }
       save(); closeModal(); renderView();
@@ -2010,10 +2230,32 @@ function bindModalEvents(){
     };
     DB.contactos.push(nuevo);
     save();
-    toast("Contacto agregado");
     const e = DB.empresas.find(x=>x.id===empresaId);
+    registrarActividad("Agregó contacto", `${nombre} ${nuevo.apellido} — ${e?.nombre||''}`);
+    toast("Contacto agregado");
     openModal(empresaPerfil(e));
   });
+
+  // Selector de empresa dentro de Oportunidad: crear una nueva al vuelo sin salir del modal
+  const opEmpresaSel = document.getElementById("op_empresa");
+  if(opEmpresaSel){
+    const cajaNueva = document.getElementById("op_empresa_nueva_box");
+    const inputNueva = document.getElementById("op_empresa_nueva");
+    opEmpresaSel.addEventListener("change", ()=>{
+      if(opEmpresaSel.value === "__nueva__"){
+        cajaNueva.style.display = "block";
+        inputNueva.focus();
+      }else{
+        cajaNueva.style.display = "none";
+      }
+    });
+    const cancelarNueva = document.getElementById("op_empresa_nueva_cancelar");
+    if(cancelarNueva) cancelarNueva.addEventListener("click", ()=>{
+      opEmpresaSel.value = "";
+      cajaNueva.style.display = "none";
+      inputNueva.value = "";
+    });
+  }
 
   // Guardar oportunidad (nueva o edición)
   const saveOpBtn = document.getElementById("saveOp");
@@ -2022,9 +2264,20 @@ function bindModalEvents(){
       const nombre = document.getElementById("op_nombre").value.trim();
       if(!nombre){ toast("El nombre de la oportunidad es obligatorio", true); return; }
       const id = saveOpBtn.dataset.id;
+
+      // Si eligió "+ Crear nueva empresa...", la crea primero y usa su id
+      let empresaId = document.getElementById("op_empresa").value || null;
+      if(empresaId === "__nueva__"){
+        const nombreNueva = document.getElementById("op_empresa_nueva").value.trim();
+        if(!nombreNueva){ toast("Escribe el nombre de la nueva empresa", true); return; }
+        const nueva = {id: uid(), nombre: nombreNueva, industria:"", ciudad:"", pais:"España"};
+        DB.empresas.push(nueva);
+        empresaId = nueva.id;
+      }
+
       const data = {
         nombre,
-        empresaId: document.getElementById("op_empresa").value || null,
+        empresaId,
         vendedorId: document.getElementById("op_vendedor").value,
         valor: Number(document.getElementById("op_valor").value)||0,
         etapa: document.getElementById("op_etapa").value,
@@ -2034,10 +2287,12 @@ function bindModalEvents(){
       if(id){
         const op = DB.oportunidades.find(o=>o.id===id);
         Object.assign(op, data);
+        registrarActividad("Editó oportunidad", data.nombre);
         toast("Oportunidad actualizada");
       }else{
         DB.oportunidades.push({...data, id:uid(), diasEtapaDesde: todayISO()});
-        toast("Oportunidad creada");
+        registrarActividad(data.etapa==="ganado" ? "Cerró venta" : "Creó oportunidad", data.nombre);
+        toast(data.etapa==="ganado" ? "Venta registrada 🎉" : "Oportunidad creada");
       }
       save(); closeModal(); renderView();
     });
@@ -2079,6 +2334,7 @@ function showApp(userEmail){
   document.getElementById("appShell").style.display = "";
   const pill = document.getElementById("userEmailPill");
   if(pill) pill.textContent = userEmail || "Modo local";
+  if(userEmail) ensureVendedorForUser(userEmail); // vincula/crea el integrante del Equipo correspondiente a esta cuenta
   startApp();
 }
 
@@ -2163,6 +2419,8 @@ document.getElementById("authForm").addEventListener("submit", async (e)=>{
 
 document.getElementById("logoutBtn").addEventListener("click", async ()=>{
   if(supabaseConfigured) await sb.auth.signOut();
+  currentUserEmail = null;
+  currentVendedorIdCache = null;
   showAuthScreen();
 });
 
