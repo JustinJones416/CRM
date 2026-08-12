@@ -350,24 +350,7 @@ function seedData(){
   const oportunidades = [];
   const actividades = [];
   const vendedores = [];
-  const scoringReglas = [
-    {id:uid(), evento:"Formulario enviado", puntos:10},
-    {id:uid(), evento:"Teléfono confirmado", puntos:5},
-    {id:uid(), evento:"Email abierto", puntos:3},
-    {id:uid(), evento:"Email clickeado", puntos:5},
-    {id:uid(), evento:"Respuesta por WhatsApp", puntos:10},
-    {id:uid(), evento:"Solicitud de cotización", puntos:20},
-    {id:uid(), evento:"Reunión agendada", puntos:25},
-    {id:uid(), evento:"Presupuesto informado", puntos:15},
-    {id:uid(), evento:"Visita página de precios", puntos:10},
-  ];
-  const scoringRangos = [
-    {etiqueta:"Frío", min:0, max:20, color:"info"},
-    {etiqueta:"Tibio", min:21, max:40, color:"amber"},
-    {etiqueta:"Caliente", min:41, max:70, color:"naranja"},
-    {etiqueta:"Prioridad", min:71, max:100, color:"red"},
-  ];
-  return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, scoringReglas, scoringRangos, oportunidadesHistorial:[]};
+  return {empresas, contactos, leads, clientes, oportunidades, actividades, vendedores, oportunidadesHistorial:[]};
 }
 
 function load(){
@@ -444,8 +427,6 @@ function migrateDB(db){
   db.empresas = (db.empresas||[]).map(e=>({ pais:"Panamá", ciudad:"", industria:"", ...e }));
   db.contactos = db.contactos || [];
   db.oportunidadesHistorial = db.oportunidadesHistorial || [];
-  db.scoringReglas = db.scoringReglas || seedData().scoringReglas;
-  db.scoringRangos = db.scoringRangos || seedData().scoringRangos;
   // El equipo de vendedores antes venía fijo en el código (Julieta Ríos, Marco Ábrego, Diana Cedeño).
   // Si el usuario ya tenía datos guardados con esos IDs (v1/v2/v3), se preservan sus nombres para
   // que los registros existentes no se queden sin responsable asignado.
@@ -463,14 +444,6 @@ function migrateDB(db){
    JavaScript que antes hacía fallar la migración silenciosamente. */
 let DB = load();
 
-/* ---------------------------- RULES (centralizadas) ---------------------------- */
-function scoreLabel(puntuacion){
-  const r = DB.scoringRangos.find(r=> puntuacion>=r.min && puntuacion<=r.max) || DB.scoringRangos[0];
-  return r;
-}
-function scoreClass(etiqueta){
-  return {"Frío":"score-frio","Tibio":"score-tibio","Caliente":"score-caliente","Prioridad":"score-prioridad"}[etiqueta] || "score-frio";
-}
 function vendedorNombre(id){ const v=DB.vendedores.find(x=>x.id===id); return v? v.nombre : "Sin asignar"; }
 
 /* Convierte un prospecto en cliente. Función central reutilizada desde la tabla de
@@ -509,12 +482,10 @@ const NAV = [
   {group:"Prospección", items:[
     {id:"leads", label:"Prospectos", ready:true},
     {id:"mapa", label:"Mapa global", ready:true},
-    {id:"scoring", label:"Lead Scoring", ready:true},
   ]},
   {group:"Clientes", items:[
     {id:"clientes", label:"Clientes", ready:true},
     {id:"empresas", label:"Empresas y contactos", ready:true},
-    {id:"riesgo", label:"Clientes en riesgo", ready:true},
   ]},
   {group:"Ventas", items:[
     {id:"pipeline", label:"Pipeline", ready:true},
@@ -538,6 +509,7 @@ function renderNav(){
   root.querySelectorAll(".navitem").forEach(a=>{
     a.addEventListener("click", e=>{
       e.preventDefault();
+      if(a.dataset.view==="clientes"){ clienteFilterRiesgo = false; clienteFilterQ = ""; }
       goTo(a.dataset.view);
       document.getElementById("sidebar").classList.remove("open");
       document.getElementById("overlay").classList.remove("active");
@@ -591,10 +563,8 @@ function renderView(){
     equipo: viewEquipo,
     leads: viewLeads,
     mapa: viewMapaGlobal,
-    scoring: viewScoring,
     clientes: viewClientes,
     empresas: viewEmpresas,
-    riesgo: viewRiesgo,
     pipeline: viewPipeline,
     oportunidades: viewOportunidades,
   };
@@ -615,10 +585,7 @@ function viewSoon(label){
 function viewDashboard(){
   const leads = DB.leads.filter(l=>l.estado!=="convertido" && l.estado!=="perdido" && l.estado!=="descartado");
   const nuevos = DB.leads.filter(l=> daysAgo(l.fechaIngreso)<=1).length;
-  const calientes = DB.leads.filter(l=>{
-    const lab = scoreLabel(l.puntuacion).etiqueta;
-    return (lab==="Caliente"||lab==="Prioridad");
-  });
+  const calientes = DB.leads.filter(l=> calcularEncaje(l).pts >= 70);
   const calientesSinContactar = calientes.filter(l=>l.estado==="nuevo").length;
 
   const opsAbiertas = DB.oportunidades.filter(o=>o.etapa!=="ganado"&&o.etapa!=="perdido");
@@ -686,7 +653,7 @@ function viewDashboard(){
       <div class="value">${fmtMoney(ticketProm)}</div>
       <div class="insight info">sobre ${ganadas.length} ventas cerradas</div>
     </div>
-    <div class="card kpi clickable" data-goto="riesgo">
+    <div class="card kpi clickable" data-action="goto-riesgo">
       <div class="label">Clientes en riesgo</div>
       <div class="value">${clientesRiesgo}</div>
       <div class="insight ${clientesRiesgo? 'risk':'good'}">${clientesRiesgo? 'Requieren seguimiento' : 'Sin alertas activas'}</div>
@@ -721,7 +688,7 @@ function viewDashboard(){
       <div class="card card-pad">
         ${calientesSinContactar? `<div class="alert-row"><span class="txt"><b>${calientesSinContactar}</b> prospectos calientes sin contactar</span><button class="btn btn-sm" data-goto="leads">Ver</button></div>`:""}
         ${estancadas.length? `<div class="alert-row"><span class="txt"><b>${estancadas.length}</b> oportunidades estancadas · ${fmtMoney(valorEstancado)}</span><button class="btn btn-sm" data-goto="pipeline">Ver</button></div>`:""}
-        ${clientesRiesgo? `<div class="alert-row"><span class="txt"><b>${clientesRiesgo}</b> clientes en riesgo alto</span><button class="btn btn-sm" data-goto="riesgo">Ver</button></div>`:""}
+        ${clientesRiesgo? `<div class="alert-row"><span class="txt"><b>${clientesRiesgo}</b> clientes en riesgo alto</span><button class="btn btn-sm" data-action="goto-riesgo">Ver</button></div>`:""}
         ${tareasVencidas.length? `<div class="alert-row"><span class="txt">⏰ <b>${tareasVencidas.length}</b> tarea(s) vencida(s)</span><button class="btn btn-sm" data-goto="alertas">Ver</button></div>`:""}
         ${cumplMeta<60 && opsAbiertas.length+ganadas.length+perdidas.length>0? `<div class="alert-row"><span class="txt">Meta mensual atrasada — <b>${cumplMeta}%</b> cumplido</span><button class="btn btn-sm" data-goto="oportunidades">Ver</button></div>`:""}
         ${!calientesSinContactar && !estancadas.length && !clientesRiesgo && !tareasVencidas.length && (cumplMeta>=60 || opsAbiertas.length+ganadas.length+perdidas.length===0)? `<div class="empty" style="padding:12px 0;">Sin alertas activas ahora mismo.</div>`:""}
@@ -858,7 +825,7 @@ function viewLeads(){
       if(!(`${l.nombre} ${l.apellido} ${l.empresaNombre}`.toLowerCase().includes(q))) return false;
     }
     return true;
-  }).sort((a,b)=> b.puntuacion-a.puntuacion);
+  }).sort((a,b)=> calcularEncaje(b).pts-calcularEncaje(a).pts);
 
   return `
   <div class="toolbar">
@@ -882,10 +849,9 @@ function viewLeads(){
   <div class="card">
     <div class="table-wrap">
     <table>
-      <thead><tr><th>Prospecto</th><th>Empresa</th><th>País</th><th>Nicho</th><th>Vendedor</th><th>Estado</th><th>Prioridad</th><th>Puntaje</th><th>Encaje</th><th></th></tr></thead>
+      <thead><tr><th>Prospecto</th><th>Empresa</th><th>País</th><th>Nicho</th><th>Vendedor</th><th>Estado</th><th>Prioridad</th><th>Encaje</th><th></th></tr></thead>
       <tbody>
         ${rows.length? rows.map(l=>{
-          const sl = scoreLabel(l.puntuacion);
           const enc = calcularEncaje(l);
           const p = paisInfo(l.pais);
           return `
@@ -897,11 +863,10 @@ function viewLeads(){
             <td data-label="Vendedor">${vendedorNombre(l.vendedorId)}</td>
             <td data-label="Estado"><span class="badge badge-${l.estado.replace('_','')}">${l.estado.replace('_',' ')}</span></td>
             <td data-label="Prioridad"><span class="badge badge-${l.prioridad}">${l.prioridad}</span></td>
-            <td data-label="Puntaje"><span class="score-chip ${scoreClass(sl.etiqueta)}">${l.puntuacion} · ${sl.etiqueta}</span></td>
             <td data-label="Encaje"><span class="score-chip ${enc.pts>=70?'score-prioridad':enc.pts>=40?'score-caliente':'score-frio'}">${enc.pts} pts</span></td>
             <td data-label=""><button class="btn btn-sm" data-convert="${l.id}">Convertir</button></td>
           </tr>`;
-        }).join("") : `<tr><td colspan="10"><div class="empty"><div class="big">🔎</div>Ningún prospecto coincide con estos filtros.</div></td></tr>`}
+        }).join("") : `<tr><td colspan="9"><div class="empty"><div class="big">🔎</div>Ningún prospecto coincide con estos filtros.</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -1180,57 +1145,23 @@ function initMapaGlobal(){
 }
 
 
-function viewScoring(){
-  return `
-  <div class="grid cols-2" style="align-items:start;">
-    <div>
-      <div class="section-title">Reglas de puntuación (centralizadas)</div>
-      <div class="card">
-        <div class="table-wrap">
-        <table>
-          <thead><tr><th>Evento</th><th>Puntos</th><th></th></tr></thead>
-          <tbody>
-            ${DB.scoringReglas.map(r=>`
-            <tr>
-              <td data-label="Evento">${r.evento}</td>
-              <td data-label="Puntos"><input type="number" class="mono" style="width:70px" value="${r.puntos}" data-regla="${r.id}"></td>
-              <td data-label=""></td>
-            </tr>`).join("")}
-          </tbody>
-        </table>
-        </div>
-        <div style="padding:12px 16px;"><button class="btn btn-accent btn-sm" id="saveScoring">Guardar reglas</button></div>
-      </div>
-    </div>
-    <div>
-      <div class="section-title">Clasificación por rango</div>
-      <div class="card card-pad" style="display:flex;flex-direction:column;gap:10px;">
-        ${DB.scoringRangos.map(r=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span class="score-chip ${scoreClass(r.etiqueta)}">${r.etiqueta}</span>
-            <span class="mono" style="color:var(--muted);font-size:12.5px;">${r.min}–${r.max} pts</span>
-          </div>`).join("")}
-      </div>
-      <div class="section-title">Simulador rápido</div>
-      <div class="card card-pad">
-        <div class="field"><label>Puntaje a simular</label><input type="number" id="simScore" value="45" style="width:100%"></div>
-        <div id="simResult" style="margin-top:10px;"></div>
-      </div>
-    </div>
-  </div>`;
-}
-
 /* --------------------------- CLIENTES --------------------------- */
 let clienteFilterQ = "";
+let clienteFilterRiesgo = false;
 function viewClientes(){
   const rows = DB.clientes.filter(c=>{
+    if(clienteFilterRiesgo && c.riesgo==="bajo") return false;
     if(!clienteFilterQ) return true;
     return `${c.nombre} ${c.segmento}`.toLowerCase().includes(clienteFilterQ.toLowerCase());
   });
+  const enRiesgoTotal = DB.clientes.filter(c=>c.riesgo!=="bajo").length;
   return `
   <div class="toolbar">
     <div class="search-box"><input type="text" id="clienteSearch" placeholder="Buscar cliente..." value="${clienteFilterQ}"></div>
-    <button class="btn btn-primary" id="btnNuevoCliente">+ Nuevo cliente</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn ${clienteFilterRiesgo?'btn-primary':''}" id="btnFiltroRiesgo">⚠ En riesgo (${enRiesgoTotal})</button>
+      <button class="btn btn-primary" id="btnNuevoCliente">+ Nuevo cliente</button>
+    </div>
   </div>
   <div class="card">
     <div class="table-wrap">
@@ -1246,7 +1177,7 @@ function viewClientes(){
           <td data-label="Ticket prom." class="mono">${fmtMoney(c.ticketPromedio)}</td>
           <td data-label="Última compra">${fmtDate(c.ultimaCompra)} <span style="color:var(--muted);font-size:11px;">(${daysAgo(c.ultimaCompra)}d)</span></td>
           <td data-label="Riesgo"><span class="badge badge-${c.riesgo==='alto'?'critica':c.riesgo==='medio'?'alta':'calificado'}">${c.riesgo}</span></td>
-        </tr>`).join("") : `<tr><td colspan="7"><div class="empty">Ningún cliente coincide con la búsqueda.</div></td></tr>`}
+        </tr>`).join("") : `<tr><td colspan="7"><div class="empty">${clienteFilterRiesgo? 'Ningún cliente en riesgo ahora mismo. 🎉' : 'Ningún cliente coincide con la búsqueda.'}</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -1312,32 +1243,6 @@ function clientePerfil(c){
   <div class="modal-foot">
     <button class="btn" data-close>Cerrar</button>
     <button class="btn btn-primary" id="btnEditarCliente" data-id="${c.id}">Editar cliente</button>
-  </div>`;
-}
-
-/* --------------------------- RIESGO --------------------------- */
-function viewRiesgo(){
-  const rows = DB.clientes.filter(c=>c.riesgo!=="bajo").sort((a,b)=> daysAgo(b.ultimaCompra)-daysAgo(a.ultimaCompra));
-  return `
-  <div class="card card-pad" style="margin-bottom:14px;background:var(--red-soft);border-color:#F1C9BE;">
-    <b>${rows.length}</b> clientes muestran señales de riesgo (caída en frecuencia de compra o inactividad prolongada).
-  </div>
-  <div class="card">
-    <div class="table-wrap">
-    <table>
-      <thead><tr><th>Cliente</th><th>Nivel</th><th>Última compra</th><th>Días inactivo</th><th>Valor histórico</th></tr></thead>
-      <tbody>
-        ${rows.length? rows.map(c=>`
-        <tr class="rowlink" data-cliente="${c.id}">
-          <td data-label="Cliente"><b>${c.nombre}</b></td>
-          <td data-label="Nivel"><span class="badge badge-${c.riesgo==='alto'?'critica':'alta'}">${c.riesgo}</span></td>
-          <td data-label="Última compra">${fmtDate(c.ultimaCompra)}</td>
-          <td data-label="Días inactivo">${daysAgo(c.ultimaCompra)}</td>
-          <td data-label="Valor histórico" class="mono">${fmtMoney(c.valorTotal)}</td>
-        </tr>`).join("") : `<tr><td colspan="5"><div class="empty">Ningún cliente en riesgo actualmente. 🎉</div></td></tr>`}
-      </tbody>
-    </table>
-    </div>
   </div>`;
 }
 
@@ -1551,7 +1456,16 @@ function oportunidadForm(op){
 ============================================================================ */
 function bindViewEvents(){
   document.querySelectorAll("[data-goto]").forEach(el=>{
-    el.addEventListener("click", ()=> goTo(el.dataset.goto));
+    el.addEventListener("click", ()=>{
+      if(el.dataset.goto==="clientes"){ clienteFilterRiesgo = false; clienteFilterQ = ""; }
+      goTo(el.dataset.goto);
+    });
+  });
+  document.querySelectorAll('[data-action="goto-riesgo"]').forEach(el=>{
+    el.addEventListener("click", ()=>{
+      clienteFilterRiesgo = true;
+      goTo("clientes");
+    });
   });
 
   // Tareas / actividades clicables (Dashboard y Alertas y tareas)
@@ -1603,25 +1517,6 @@ function bindViewEvents(){
     });
   }
 
-  // SCORING
-  const saveScoring = document.getElementById("saveScoring");
-  if(saveScoring){
-    saveScoring.addEventListener("click", ()=>{
-      document.querySelectorAll("[data-regla]").forEach(inp=>{
-        const r = DB.scoringReglas.find(x=>x.id===inp.dataset.regla);
-        if(r) r.puntos = Number(inp.value)||0;
-      });
-      save(); toast("Reglas de scoring actualizadas");
-    });
-    const simScore = document.getElementById("simScore");
-    const renderSim = ()=>{
-      const v = Number(simScore.value)||0;
-      const r = scoreLabel(v);
-      document.getElementById("simResult").innerHTML = `<span class="score-chip ${scoreClass(r.etiqueta)}">${v} pts → ${r.etiqueta}</span>`;
-    };
-    simScore.addEventListener("input", renderSim); renderSim();
-  }
-
   // CLIENTES
   document.querySelectorAll("[data-cliente]").forEach(row=>{
     row.addEventListener("click", ()=>{
@@ -1632,6 +1527,12 @@ function bindViewEvents(){
   const clienteSearch = document.getElementById("clienteSearch");
   if(clienteSearch) clienteSearch.addEventListener("input", e=>{
     clienteFilterQ = e.target.value;
+    document.getElementById("content").innerHTML = viewClientes();
+    bindViewEvents();
+  });
+  const btnFiltroRiesgo = document.getElementById("btnFiltroRiesgo");
+  if(btnFiltroRiesgo) btnFiltroRiesgo.addEventListener("click", ()=>{
+    clienteFilterRiesgo = !clienteFilterRiesgo;
     document.getElementById("content").innerHTML = viewClientes();
     bindViewEvents();
   });
