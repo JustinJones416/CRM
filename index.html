@@ -36,29 +36,49 @@ button{font-family:inherit;cursor:pointer;}
 a{color:inherit;}
 
 /* ---------- SHELL ---------- */
-.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;}
-.sidebar{background:var(--ink);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;transition:grid-template-columns .18s;}
+.shell.collapsed{grid-template-columns:64px 1fr;}
+.sidebar{background:var(--ink);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:padding .18s;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
-.brand .mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0B6259);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
-.brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;}
-.brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;}
+.brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0B6259);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
+.brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
+.brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;white-space:nowrap;}
 .navgroup{margin-bottom:4px;}
-.navgroup-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#666C87;padding:14px 12px 6px;}
-.navitem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;font-size:13.2px;color:#C6CBE0;text-decoration:none;margin-bottom:1px;}
+.navgroup-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#666C87;padding:14px 12px 6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;white-space:nowrap;}
+.navgroup-title .chev{transition:transform .15s;font-size:9px;}
+.navgroup.closed .chev{transform:rotate(-90deg);}
+.navgroup.closed .navitem{display:none;}
+.navitem{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;font-size:13.2px;color:#C6CBE0;text-decoration:none;margin-bottom:1px;white-space:nowrap;overflow:hidden;}
 .navitem:hover{background:#1F2745;color:#fff;}
 .navitem.active{background:var(--accent);color:#fff;font-weight:600;}
 .navitem .tag{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;letter-spacing:.02em;}
 .navitem.active .tag{background:rgba(255,255,255,.2);color:#fff;}
+.collapse-btn{background:none;border:none;color:#8388A3;cursor:pointer;padding:6px;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.collapse-btn:hover{background:#1F2745;color:#fff;}
+.shell.collapsed .brand .name,.shell.collapsed .brand .sub,.shell.collapsed .navgroup-title span,.shell.collapsed .navgroup-title .chev,.shell.collapsed .navitem span,.shell.collapsed .navitem .tag{display:none;}
+.shell.collapsed .navitem{justify-content:center;}
+.shell.collapsed .navgroup-title{justify-content:center;}
 
 .main{min-width:0;}
-.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 22px;position:sticky;top:0;z-index:20;overflow:hidden;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 22px;position:sticky;top:0;z-index:20;overflow:hidden;gap:10px;}
 .right{display:flex;align-items:center;gap:8px;flex-shrink:1;min-width:0;overflow:hidden;}
 .btn-label-mobile{display:none;}
-.topbar h1{font-size:16px;margin:0;font-weight:700;}
-.topbar .right{display:flex;align-items:center;gap:14px;}
+.topbar h1{font-size:16px;margin:0;font-weight:700;white-space:nowrap;}
 .pill{font-size:11.5px;background:var(--info-soft);color:var(--info);padding:5px 10px;border-radius:20px;font-weight:600;}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:'Sora';}
 .menu-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;}
+
+/* ---------- BÚSQUEDA GLOBAL ---------- */
+.global-search-wrap{position:relative;flex:1;max-width:340px;min-width:0;}
+.global-search-input{width:100%;padding:7px 12px 7px 30px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="%236B7080" stroke-width="2"><circle cx="6" cy="6" r="5"/><line x1="10" y1="10" x2="13" y2="13"/></svg>') 9px center no-repeat;}
+.global-search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.12);max-height:360px;overflow-y:auto;z-index:2500;display:none;}
+.global-search-results.active{display:block;}
+.gsr-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--paper);}
+.gsr-item:last-child{border-bottom:none;}
+.gsr-item:hover{background:var(--paper);}
+.gsr-item .gsr-title{font-size:13px;font-weight:600;}
+.gsr-item .gsr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.gsr-empty{padding:14px;text-align:center;color:var(--muted);font-size:12.5px;}
 
 .content{padding:22px;max-width:1400px;}
 .view{display:none;}
@@ -197,6 +217,11 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .alert-row .txt{font-size:13px;}
 .alert-row .txt b{font-weight:700;}
 
+@media(min-width:901px) and (max-width:1240px){
+  .cols-4{grid-template-columns:repeat(2,1fr);}
+  .cols-3{grid-template-columns:repeat(2,1fr);}
+  .global-search-wrap{max-width:220px;}
+}
 @media(max-width:900px){
   .shell{grid-template-columns:1fr;}
   .sidebar{position:fixed;left:-260px;top:0;width:236px;z-index:50;transition:.2s;box-shadow:8px 0 30px rgba(0,0,0,.2);}
@@ -215,8 +240,18 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
   #logoutBtn .btn-label{display:none;}
   .btn-label-mobile{display:inline;}
   #addPasskeyBtn, #logoutBtn{padding:7px 9px;}
-  .topbar{padding:0 10px;}
+  .topbar{padding:0 10px;gap:6px;}
   .right{gap:6px;}
+  .collapse-btn{display:none;}
+  .global-search-wrap{order:3;max-width:none;flex-basis:100%;margin-top:8px;}
+  .topbar{flex-wrap:wrap;height:auto;padding-top:8px;padding-bottom:8px;}
+  .toolbar{flex-wrap:wrap;gap:8px;}
+  .toolbar>div:first-child{flex:1;min-width:180px;}
+}
+@media(max-width:420px){
+  .grid.cols-3 > .card{padding:14px;}
+  .kpi .value{font-size:22px;}
+  .global-search-input::placeholder{font-size:12px;}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -271,6 +306,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
     <div class="brand">
       <div class="mark">N</div>
       <div><div class="name">Nexo CRM</div><div class="sub">MODO PROTOTIPO · DATOS LOCALES</div></div>
+      <button class="collapse-btn" id="collapseBtn" title="Contraer/expandir menú" style="margin-left:auto;">«</button>
     </div>
     <nav id="navroot"></nav>
   </aside>
@@ -282,6 +318,10 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="menu-btn" id="menuBtn">☰</button>
         <h1 id="viewTitle">Dashboard</h1>
+      </div>
+      <div class="global-search-wrap">
+        <input type="text" class="global-search-input" id="globalSearch" placeholder="Buscar prospectos, clientes, empresas...">
+        <div class="global-search-results" id="globalSearchResults"></div>
       </div>
       <div class="right">
         <span class="pill" id="userEmailPill">—</span>
@@ -556,9 +596,119 @@ let currentUserEmail = null;
 let currentVendedorIdCache = null;
 function currentVendedorId(){ return currentVendedorIdCache; }
 
-function ensureVendedorForUser(email){
+/* ============================================================================
+   EQUIPO — Tabla compartida en Supabase (tabla "vendedores").
+   Antes esto vivía solo en localStorage, invisible entre compañeros. Ahora,
+   si Supabase está configurado, todo el equipo lee y escribe la misma tabla.
+   Si no está configurado (o el usuario entró en "modo local"), se usa el
+   arreglo local de siempre como respaldo, sin romper nada.
+============================================================================ */
+async function cargarEquipoDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("vendedores").select("*").order("creado_en", {ascending:true});
+    if(error) throw error;
+    DB.vendedores = (data||[]).map(v=>({id:v.id, nombre:v.nombre, rol:v.rol, email:v.email}));
+  }catch(err){
+    console.warn("No se pudo cargar el equipo desde Supabase (¿falta correr supabase_migration.sql?):", err.message);
+    toast("No se pudo sincronizar el equipo con Supabase — revisa SUPABASE_SETUP.md", true);
+  }
+}
+
+/* ============================================================================
+   PROSPECTOS — Tabla compartida en Supabase (tabla "leads"). Mismo patrón que
+   el equipo: convierte entre el objeto JS (camelCase) y las columnas de la
+   base de datos (snake_case) en ambas direcciones.
+============================================================================ */
+function leadDesdeFila(r){
+  return {
+    id: r.id, nombre: r.nombre, apellido: r.apellido||"", empresaNombre: r.empresa_nombre||"",
+    cargo: r.cargo||"", email: r.email||"", telefono: r.telefono||"", pais: r.pais||"",
+    colaboradores: r.colaboradores||0, nicho: r.nicho||"Otro", falencia: r.falencia||"",
+    fuente: r.fuente||"", vendedorId: r.vendedor_id||"", productoInteres: r.producto_interes||"",
+    presupuesto: Number(r.presupuesto)||0, prioridad: r.prioridad||"media", estado: r.estado||"nuevo",
+    puntuacion: r.puntuacion||0, puntosEncaje: r.puntos_encaje||0, motivoDescarte: r.motivo_descarte||"",
+    googleRating: r.google_rating, tieneSitioWeb: !!r.tiene_sitio_web, googleLink: r.google_link||"",
+    fechaIngreso: r.fecha_ingreso,
+  };
+}
+function leadAFila(l){
+  return {
+    nombre: l.nombre, apellido: l.apellido||"", empresa_nombre: l.empresaNombre||"", cargo: l.cargo||"",
+    email: l.email||"", telefono: l.telefono||"", pais: l.pais||"", colaboradores: l.colaboradores||0,
+    nicho: l.nicho||"Otro", falencia: l.falencia||"", fuente: l.fuente||"", vendedor_id: l.vendedorId||null,
+    producto_interes: l.productoInteres||"", presupuesto: l.presupuesto||0, prioridad: l.prioridad||"media",
+    estado: l.estado||"nuevo", puntuacion: l.puntuacion||0, puntos_encaje: l.puntosEncaje||0,
+    motivo_descarte: l.motivoDescarte||"", google_rating: l.googleRating||null,
+    tiene_sitio_web: !!l.tieneSitioWeb, google_link: l.googleLink||"",
+    actualizado_en: new Date().toISOString(),
+  };
+}
+async function cargarLeadsDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("leads").select("*").order("fecha_ingreso", {ascending:false});
+    if(error) throw error;
+    DB.leads = (data||[]).map(leadDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar prospectos desde Supabase (¿falta correr supabase_migration.sql?):", err.message);
+    toast("No se pudo sincronizar prospectos con Supabase — revisa SUPABASE_SETUP.md", true);
+  }
+}
+/* Guarda un prospecto (nuevo o existente) en Supabase y devuelve el objeto ya con su id real.
+   Si Supabase no está configurado o falla, devuelve null y quien llama debe usar el respaldo local. */
+async function guardarLeadEnSupabase(lead, esNuevo){
+  if(!supabaseConfigured) return null;
+  try{
+    if(esNuevo){
+      const {data, error} = await sb.from("leads").insert(leadAFila(lead)).select().single();
+      if(error) throw error;
+      return leadDesdeFila(data);
+    }else{
+      const {data, error} = await sb.from("leads").update(leadAFila(lead)).eq("id", lead.id).select().single();
+      if(error) throw error;
+      return leadDesdeFila(data);
+    }
+  }catch(err){
+    toast(err.message || "No se pudo guardar el prospecto en Supabase", true);
+    return null;
+  }
+}
+async function eliminarLeadEnSupabase(id){
+  if(!supabaseConfigured) return true;
+  try{
+    const {error} = await sb.from("leads").delete().eq("id", id);
+    if(error) throw error;
+    return true;
+  }catch(err){
+    toast(err.message || "No se pudo eliminar el prospecto en Supabase", true);
+    return false;
+  }
+}
+
+async function ensureVendedorForUser(email){
   if(!email) return null;
   currentUserEmail = email;
+
+  if(supabaseConfigured){
+    try{
+      let v = DB.vendedores.find(x=> (x.email||"").toLowerCase()===email.toLowerCase());
+      if(!v){
+        const nombreSugerido = email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g, c=>c.toUpperCase());
+        const {data, error} = await sb.from("vendedores").insert({nombre:nombreSugerido, rol:"Closer", email}).select().single();
+        if(error) throw error;
+        v = {id:data.id, nombre:data.nombre, rol:data.rol, email:data.email};
+        DB.vendedores.push(v);
+      }
+      currentVendedorIdCache = v.id;
+      return v.id;
+    }catch(err){
+      console.warn("No se pudo vincular el usuario al equipo en Supabase:", err.message);
+      // continúa al respaldo local abajo
+    }
+  }
+
+  // Respaldo local (sin Supabase configurado, o si la llamada anterior falló)
   let v = DB.vendedores.find(x=> (x.email||"").toLowerCase()===email.toLowerCase());
   if(!v){
     const nombreSugerido = email.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g, c=>c.toUpperCase());
@@ -566,7 +716,7 @@ function ensureVendedorForUser(email){
     DB.vendedores.push(v);
     save();
   }else if(!v.email){
-    v.email = email; // vincula retroactivamente un registro manual con la cuenta que acaba de entrar
+    v.email = email;
     save();
   }
   currentVendedorIdCache = v.id;
@@ -576,10 +726,11 @@ function ensureVendedorForUser(email){
 /* Convierte un prospecto en cliente. Función central reutilizada desde la tabla de
    Prospectos y desde el popup del Mapa global (los popups de Leaflet viven fuera del
    ciclo normal de eventos delegados, por eso también se expone en window). */
-function convertirLeadACliente(leadId){
+async function convertirLeadACliente(leadId){
   const l = DB.leads.find(x=>x.id===leadId);
   if(!l) return;
   l.estado = "convertido";
+  if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
   DB.clientes.push({
     id:uid(), nombre: l.empresaNombre || `${l.nombre} ${l.apellido}`, empresaId:null, contactoId:null,
     segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
@@ -623,13 +774,14 @@ const NAV = [
 
 let currentView = "dashboard";
 
+let navGruposCerrados = new Set(JSON.parse(localStorage.getItem("nexocrm_navclosed")||"[]"));
 function renderNav(){
   const root = document.getElementById("navroot");
   root.innerHTML = NAV.map(g=>`
-    <div class="navgroup">
-      <div class="navgroup-title">${g.group}</div>
+    <div class="navgroup ${navGruposCerrados.has(g.group)?'closed':''}">
+      <div class="navgroup-title" data-grupo="${g.group}"><span>${g.group}</span><span class="chev">▾</span></div>
       ${g.items.map(it=>`
-        <a href="#" class="navitem ${it.id===currentView?'active':''}" data-view="${it.id}">
+        <a href="#" class="navitem ${it.id===currentView?'active':''}" data-view="${it.id}" title="${it.label}">
           <span>${it.label}</span>
           ${it.ready ? '' : '<span class="tag">Próximamente</span>'}
         </a>`).join("")}
@@ -641,6 +793,15 @@ function renderNav(){
       goTo(a.dataset.view);
       document.getElementById("sidebar").classList.remove("open");
       document.getElementById("overlay").classList.remove("active");
+    });
+  });
+  root.querySelectorAll(".navgroup-title").forEach(t=>{
+    t.addEventListener("click", ()=>{
+      const grupo = t.dataset.grupo;
+      if(navGruposCerrados.has(grupo)) navGruposCerrados.delete(grupo);
+      else navGruposCerrados.add(grupo);
+      try{ localStorage.setItem("nexocrm_navclosed", JSON.stringify([...navGruposCerrados])); }catch(e){}
+      renderNav();
     });
   });
 }
@@ -867,6 +1028,14 @@ function viewAlertas(){
 /* --------------------------- EQUIPO (vendedores/closers) --------------------------- */
 function viewEquipo(){
   return `
+  ${supabaseConfigured
+    ? `<div class="card card-pad" style="margin-bottom:14px;background:var(--accent-soft);border-color:#BFE4DD;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>✓ Equipo compartido — todos ven a todos, sincronizado con Supabase.</span>
+        <button class="btn btn-sm" id="btnSincronizarEquipo">🔄 Sincronizar ahora</button>
+      </div>`
+    : `<div class="card card-pad" style="margin-bottom:14px;background:var(--amber-soft);border-color:#EAD3A3;">
+        ⚠ Modo local — este equipo solo es visible en este navegador. Configura Supabase (ver SUPABASE_SETUP.md) para que todo el equipo vea lo mismo.
+      </div>`}
   <div class="toolbar">
     <div style="color:var(--muted);font-size:12.5px;">${DB.vendedores.length} integrante(s) del equipo</div>
     <button class="btn btn-primary" id="btnNuevoVendedor">+ Agregar integrante</button>
@@ -990,6 +1159,14 @@ function viewLeads(){
   }).sort((a,b)=> calcularEncaje(b).pts-calcularEncaje(a).pts);
 
   return `
+  ${supabaseConfigured
+    ? `<div class="card card-pad" style="margin-bottom:14px;background:var(--accent-soft);border-color:#BFE4DD;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span>✓ Prospectos compartidos — todo el equipo ve los mismos registros.</span>
+        <button class="btn btn-sm" id="btnSincronizarLeads">🔄 Sincronizar ahora</button>
+      </div>`
+    : `<div class="card card-pad" style="margin-bottom:14px;background:var(--amber-soft);border-color:#EAD3A3;">
+        ⚠ Modo local — estos prospectos solo son visibles en este navegador. Configura Supabase (ver SUPABASE_SETUP.md) para compartirlos con el equipo.
+      </div>`}
   <div class="toolbar">
     <div class="filters">
       <div class="search-box"><input type="text" id="leadSearch" placeholder="Buscar prospecto o empresa..." value="${leadFilters.q}"></div>
@@ -1738,6 +1915,22 @@ function bindViewEvents(){
   document.querySelectorAll("[data-ver-actividad]").forEach(btn=>{
     btn.addEventListener("click", ()=> openModal(actividadVendedorModal(btn.dataset.verActividad)));
   });
+  const btnSincronizarEquipo = document.getElementById("btnSincronizarEquipo");
+  if(btnSincronizarEquipo) btnSincronizarEquipo.addEventListener("click", async ()=>{
+    btnSincronizarEquipo.disabled = true;
+    btnSincronizarEquipo.textContent = "Sincronizando...";
+    await cargarEquipoDesdeSupabase();
+    toast("Equipo actualizado");
+    renderView();
+  });
+  const btnSincronizarLeads = document.getElementById("btnSincronizarLeads");
+  if(btnSincronizarLeads) btnSincronizarLeads.addEventListener("click", async ()=>{
+    btnSincronizarLeads.disabled = true;
+    btnSincronizarLeads.textContent = "Sincronizando...";
+    await cargarLeadsDesdeSupabase();
+    toast("Prospectos actualizados");
+    renderView();
+  });
 
   // Filas de prospecto clicables en cualquier vista (Prospectos, Mapa global)
   document.querySelectorAll("[data-lead]").forEach(row=>{
@@ -1847,7 +2040,7 @@ function bindModalEvents(){
   // Guardar / eliminar integrante del equipo
   const saveVendedorBtn = document.getElementById("saveVendedor");
   if(saveVendedorBtn){
-    saveVendedorBtn.addEventListener("click", ()=>{
+    saveVendedorBtn.addEventListener("click", async ()=>{
       const nombre = document.getElementById("ve_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = saveVendedorBtn.dataset.id;
@@ -1856,29 +2049,53 @@ function bindModalEvents(){
       if(email && DB.vendedores.some(v=>v.id!==id && (v.email||"").toLowerCase()===email.toLowerCase())){
         toast("Ese correo ya está vinculado a otro integrante del equipo", true); return;
       }
-      if(id){
-        Object.assign(DB.vendedores.find(v=>v.id===id), {nombre, rol, email});
-        registrarActividad("Editó integrante del equipo", nombre);
-        toast("Integrante actualizado");
-      }else{
-        DB.vendedores.push({id: uid(), nombre, rol, email});
-        registrarActividad("Agregó integrante al equipo", nombre);
-        toast("Integrante agregado al equipo");
+      saveVendedorBtn.disabled = true;
+      try{
+        if(id){
+          if(supabaseConfigured){
+            const {error} = await sb.from("vendedores").update({nombre, rol, email: email||null}).eq("id", id);
+            if(error) throw error;
+          }
+          Object.assign(DB.vendedores.find(v=>v.id===id), {nombre, rol, email});
+          registrarActividad("Editó integrante del equipo", nombre);
+          toast("Integrante actualizado");
+        }else{
+          if(supabaseConfigured){
+            const {data, error} = await sb.from("vendedores").insert({nombre, rol, email: email||null}).select().single();
+            if(error) throw error;
+            DB.vendedores.push({id:data.id, nombre:data.nombre, rol:data.rol, email:data.email});
+          }else{
+            DB.vendedores.push({id: uid(), nombre, rol, email});
+          }
+          registrarActividad("Agregó integrante al equipo", nombre);
+          toast("Integrante agregado al equipo");
+        }
+        save(); closeModal(); renderView();
+      }catch(err){
+        toast(err.message || "No se pudo guardar en Supabase", true);
+        saveVendedorBtn.disabled = false;
       }
-      save(); closeModal(); renderView();
     });
   }
   const btnEliminarVendedor = document.getElementById("btnEliminarVendedor");
   if(btnEliminarVendedor){
-    btnEliminarVendedor.addEventListener("click", ()=>{
+    btnEliminarVendedor.addEventListener("click", async ()=>{
       const id = btnEliminarVendedor.dataset.id;
       const enUso = [...DB.leads, ...DB.clientes, ...DB.oportunidades, ...DB.actividades].some(r=>r.vendedorId===id);
       if(enUso){
         toast("No se puede eliminar: tiene prospectos, clientes o tareas asignadas", true);
         return;
       }
-      DB.vendedores = DB.vendedores.filter(v=>v.id!==id);
-      save(); toast("Integrante eliminado"); closeModal(); renderView();
+      try{
+        if(supabaseConfigured){
+          const {error} = await sb.from("vendedores").delete().eq("id", id);
+          if(error) throw error;
+        }
+        DB.vendedores = DB.vendedores.filter(v=>v.id!==id);
+        save(); toast("Integrante eliminado"); closeModal(); renderView();
+      }catch(err){
+        toast(err.message || "No se pudo eliminar en Supabase", true);
+      }
     });
   }
 
@@ -1993,13 +2210,14 @@ function bindModalEvents(){
 
   const confirmDescarte = document.getElementById("confirmDescarte");
   if(confirmDescarte){
-    confirmDescarte.addEventListener("click", ()=>{
+    confirmDescarte.addEventListener("click", async ()=>{
       const l = DB.leads.find(x=>x.id===confirmDescarte.dataset.id);
       if(!l) return;
       const motivo = document.getElementById("desc_motivo").value;
       const nota = document.getElementById("desc_nota").value;
       l.estado = "descartado";
       l.motivoDescarte = nota? `${motivo} — ${nota}` : motivo;
+      if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
       save();
       registrarActividad("Descartó prospecto", `${l.nombre} ${l.apellido} — ${motivo}`);
       toast(`${l.nombre} ${l.apellido} descartado`);
@@ -2010,11 +2228,12 @@ function bindModalEvents(){
   // Reactivar prospecto descartado
   const btnReactivar = document.getElementById("btnReactivar");
   if(btnReactivar){
-    btnReactivar.addEventListener("click", ()=>{
+    btnReactivar.addEventListener("click", async ()=>{
       const l = DB.leads.find(x=>x.id===btnReactivar.dataset.id);
       if(!l) return;
       l.estado = "nuevo";
       l.motivoDescarte = "";
+      if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
       save();
       registrarActividad("Reactivó prospecto", `${l.nombre} ${l.apellido}`);
       toast(`${l.nombre} ${l.apellido} reactivado`);
@@ -2051,7 +2270,7 @@ function bindModalEvents(){
     });
     calcHoraCliente();
 
-    confirmAgendar.addEventListener("click", ()=>{
+    confirmAgendar.addEventListener("click", async ()=>{
       const leadId = confirmAgendar.dataset.lead;
       const l = DB.leads.find(x=>x.id===leadId);
       if(!l) return;
@@ -2066,6 +2285,7 @@ function bindModalEvents(){
         estado: "pendiente", vendedorId, leadId: l.id,
       });
       l.estado = l.estado==="nuevo" ? "contactado" : l.estado;
+      if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
       save();
       registrarActividad("Agendó reunión", `${l.nombre} ${l.apellido} — ${fmtDate(fechaISO)}`);
       toast(`Reunión agendada con ${l.nombre} ${l.apellido} para el ${fmtDate(fechaISO)}`);
@@ -2076,7 +2296,7 @@ function bindModalEvents(){
   // Captación manual desde Google Business / reseñas / sin sitio web
   const saveGoogleBtn = document.getElementById("saveGoogleCapture");
   if(saveGoogleBtn){
-    saveGoogleBtn.addEventListener("click", ()=>{
+    saveGoogleBtn.addEventListener("click", async ()=>{
       const empresa = document.getElementById("gc_empresa").value.trim();
       if(!empresa){ toast("El nombre del negocio es obligatorio", true); return; }
       const nuevo = {
@@ -2104,10 +2324,22 @@ function bindModalEvents(){
         googleLink: document.getElementById("gc_link").value,
       };
       nuevo.puntosEncaje = calcularEncaje(nuevo).pts;
-      DB.leads.unshift(nuevo);
+      saveGoogleBtn.disabled = true;
+      let sincronizado = true;
+      if(supabaseConfigured){
+        const guardado = await guardarLeadEnSupabase(nuevo, true);
+        if(guardado){
+          DB.leads.unshift(guardado);
+        }else{
+          DB.leads.unshift(nuevo); // respaldo local: no se pierde el trabajo si Supabase falla
+          sincronizado = false;
+        }
+      }else{
+        DB.leads.unshift(nuevo);
+      }
       save();
       registrarActividad("Captó prospecto desde Google", empresa);
-      toast(`${empresa} capturado desde Google`);
+      toast(sincronizado? `${empresa} capturado desde Google` : `${empresa} guardado solo en este navegador — no se pudo sincronizar`, !sincronizado);
       closeModal(); renderView();
     });
   }
@@ -2136,7 +2368,7 @@ function bindModalEvents(){
       const el = document.getElementById(id);
       if(el) el.addEventListener("input", updateLive);
     });
-    saveLeadBtn.addEventListener("click", ()=>{
+    saveLeadBtn.addEventListener("click", async ()=>{
       const nombre = document.getElementById("f_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = saveLeadBtn.dataset.id;
@@ -2158,12 +2390,29 @@ function bindModalEvents(){
       };
       const enc = calcularEncaje(data);
       data.puntosEncaje = enc.pts;
+      saveLeadBtn.disabled = true;
       if(id){
-        Object.assign(DB.leads.find(l=>l.id===id), data);
+        const existente = DB.leads.find(l=>l.id===id);
+        Object.assign(existente, data);
+        if(supabaseConfigured){
+          const guardado = await guardarLeadEnSupabase(existente, false);
+          if(!guardado) toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+        }
         registrarActividad("Editó prospecto", `${data.nombre} ${data.apellido} — ${data.empresaNombre||'sin empresa'}`);
         toast("Prospecto actualizado");
       }else{
-        DB.leads.unshift({...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()});
+        const nuevo = {...data, id:uid(), estado:"nuevo", puntuacion:0, fechaIngreso: todayISO()};
+        if(supabaseConfigured){
+          const guardado = await guardarLeadEnSupabase(nuevo, true);
+          if(guardado){
+            DB.leads.unshift(guardado);
+          }else{
+            DB.leads.unshift(nuevo); // respaldo local: no se pierde el trabajo si Supabase falla
+            toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+          }
+        }else{
+          DB.leads.unshift(nuevo);
+        }
         registrarActividad("Creó prospecto", `${data.nombre} ${data.apellido} — ${data.empresaNombre||'sin empresa'}`);
         toast("Prospecto creado");
       }
@@ -2314,27 +2563,108 @@ document.getElementById("overlay").addEventListener("click", ()=>{
   document.getElementById("overlay").classList.remove("active");
 });
 
+/* Sidebar contraíble en escritorio — útil en tablets y pantallas medianas donde el
+   menú completo ocupa espacio valioso. El estado se recuerda entre sesiones. */
+const collapseBtn = document.getElementById("collapseBtn");
+if(collapseBtn){
+  if(localStorage.getItem("nexocrm_sidebar_collapsed")==="1"){
+    document.getElementById("appShell").classList.add("collapsed");
+    collapseBtn.textContent = "»";
+  }
+  collapseBtn.addEventListener("click", ()=>{
+    const shell = document.getElementById("appShell");
+    const colapsado = shell.classList.toggle("collapsed");
+    collapseBtn.textContent = colapsado ? "»" : "«";
+    try{ localStorage.setItem("nexocrm_sidebar_collapsed", colapsado? "1":"0"); }catch(e){}
+  });
+}
+
+/* ============================================================================
+   BÚSQUEDA GLOBAL — busca por nombre/empresa entre prospectos, clientes y
+   empresas desde cualquier pantalla, sin tener que navegar primero al módulo.
+============================================================================ */
+const globalSearchInput = document.getElementById("globalSearch");
+const globalSearchResults = document.getElementById("globalSearchResults");
+if(globalSearchInput){
+  const ejecutarBusqueda = ()=>{
+    const q = globalSearchInput.value.trim().toLowerCase();
+    if(q.length<2){ globalSearchResults.classList.remove("active"); globalSearchResults.innerHTML=""; return; }
+    const resultados = [];
+    DB.leads.forEach(l=>{
+      if(`${l.nombre} ${l.apellido} ${l.empresaNombre||''}`.toLowerCase().includes(q)){
+        resultados.push({tipo:"Prospecto", titulo:`${l.nombre} ${l.apellido}`, sub:l.empresaNombre||l.email||'', accion:()=>{ clienteFilterRiesgo=false; goTo("leads"); setTimeout(()=>openModal(leadForm(l)),50); }});
+      }
+    });
+    DB.clientes.forEach(c=>{
+      if(c.nombre.toLowerCase().includes(q)){
+        resultados.push({tipo:"Cliente", titulo:c.nombre, sub:c.segmento||'', accion:()=>{ clienteFilterRiesgo=false; goTo("clientes"); setTimeout(()=>openModal(clientePerfil(c)),50); }});
+      }
+    });
+    DB.empresas.forEach(e=>{
+      if(e.nombre.toLowerCase().includes(q)){
+        resultados.push({tipo:"Empresa", titulo:e.nombre, sub:[e.industria,e.ciudad].filter(Boolean).join(' · '), accion:()=>{ goTo("empresas"); setTimeout(()=>openModal(empresaPerfil(e)),50); }});
+      }
+    });
+    DB.oportunidades.forEach(o=>{
+      if(o.nombre.toLowerCase().includes(q)){
+        resultados.push({tipo:"Oportunidad", titulo:o.nombre, sub:fmtMoney(o.valor), accion:()=>{ goTo("oportunidades"); setTimeout(()=>openModal(oportunidadForm(o)),50); }});
+      }
+    });
+    if(!resultados.length){
+      globalSearchResults.innerHTML = `<div class="gsr-empty">Sin resultados para "${globalSearchInput.value}"</div>`;
+    }else{
+      globalSearchResults.innerHTML = resultados.slice(0,12).map((r,i)=>`
+        <div class="gsr-item" data-idx="${i}">
+          <div class="gsr-title">${r.titulo} <span style="color:var(--muted);font-weight:400;font-size:11px;">· ${r.tipo}</span></div>
+          <div class="gsr-sub">${r.sub}</div>
+        </div>`).join("");
+      globalSearchResults.querySelectorAll(".gsr-item").forEach((el,i)=>{
+        el.addEventListener("click", ()=>{
+          resultados[i].accion();
+          globalSearchResults.classList.remove("active");
+          globalSearchInput.value = "";
+        });
+      });
+    }
+    globalSearchResults.classList.add("active");
+  };
+  globalSearchInput.addEventListener("input", ejecutarBusqueda);
+  globalSearchInput.addEventListener("focus", ()=>{ if(globalSearchInput.value.trim().length>=2) ejecutarBusqueda(); });
+  document.addEventListener("click", (e)=>{
+    if(!e.target.closest(".global-search-wrap")) globalSearchResults.classList.remove("active");
+  });
+}
+
 function startApp(){
   renderNav();
   renderView();
   /* Refresco en tiempo real: recalcula el Dashboard y Alertas cada 20s (tareas que vencen,
      cambios hechos en otras vistas) sin interrumpir al usuario si hay un modal abierto o
-     está escribiendo en un formulario. */
-  setInterval(()=>{
+     está escribiendo en un formulario. El módulo Equipo además vuelve a consultar
+     Supabase, para que aparezcan compañeros que iniciaron sesión en otro dispositivo. */
+  setInterval(async ()=>{
     const modalAbierto = document.getElementById("modalBg").classList.contains("active");
     if(modalAbierto) return;
     if(currentView==="dashboard" || currentView==="alertas"){
+      renderView();
+    }else if(currentView==="equipo" && supabaseConfigured){
+      await cargarEquipoDesdeSupabase();
+      renderView();
+    }else if(currentView==="leads" && supabaseConfigured){
+      await cargarLeadsDesdeSupabase();
       renderView();
     }
   }, 20000);
 }
 
-function showApp(userEmail){
+async function showApp(userEmail){
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("appShell").style.display = "";
   const pill = document.getElementById("userEmailPill");
   if(pill) pill.textContent = userEmail || "Modo local";
-  if(userEmail) ensureVendedorForUser(userEmail); // vincula/crea el integrante del Equipo correspondiente a esta cuenta
+  if(supabaseConfigured) await cargarEquipoDesdeSupabase(); // trae el equipo real y compartido, visible para todos
+  if(supabaseConfigured) await cargarLeadsDesdeSupabase(); // trae los prospectos reales y compartidos
+  if(userEmail) await ensureVendedorForUser(userEmail); // vincula/crea el integrante del Equipo correspondiente a esta cuenta
   startApp();
 }
 
