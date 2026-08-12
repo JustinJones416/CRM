@@ -244,6 +244,11 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
       <button type="submit" class="btn btn-primary" id="authSubmitBtn" style="width:100%;margin-top:10px;justify-content:center;">Iniciar sesión</button>
     </form>
 
+    <div id="passkeyDivider" style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:11.5px;">
+      <div style="flex:1;height:1px;background:var(--line);"></div>o<div style="flex:1;height:1px;background:var(--line);"></div>
+    </div>
+    <button type="button" class="btn" id="passkeyLoginBtn" style="width:100%;justify-content:center;">🔑 Iniciar sesión con passkey</button>
+
     <div id="authConfigWarning" class="auth-error" style="display:none;margin-top:14px;">
       ⚠ Supabase no está configurado todavía. Un administrador debe completar <span class="mono">SUPABASE_URL</span> y <span class="mono">SUPABASE_ANON_KEY</span> al inicio del archivo. Ver <span class="mono">SUPABASE_SETUP.md</span>.
       <div style="margin-top:10px;"><a href="#" id="bypassAuthLink" style="color:inherit;text-decoration:underline;">Continuar sin login por ahora →</a></div>
@@ -271,6 +276,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
       </div>
       <div class="right">
         <span class="pill" id="userEmailPill">—</span>
+        <button class="btn btn-sm" id="addPasskeyBtn" title="Agregar un passkey para iniciar sesión sin contraseña">🔑 Agregar passkey</button>
         <button class="btn btn-sm" id="logoutBtn">Cerrar sesión</button>
         <div class="avatar">JR</div>
       </div>
@@ -306,7 +312,9 @@ const SUPABASE_URL = "https://yzpoahppdmgnyeglnxea.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_srBLJLsjyCzsN5T1VMT0Tw_IwZdQlYt"; // clave pública — segura para exponer en el navegador
 
 const supabaseConfigured = !SUPABASE_URL.includes("TU_SUPABASE_URL_AQUI") && !SUPABASE_ANON_KEY.includes("TU_SUPABASE_ANON_KEY_AQUI");
-const sb = supabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const sb = supabaseConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { experimental: { passkey: true } } // requiere @supabase/supabase-js v2.105+ y HTTPS en un dominio real
+}) : null;
 
 const STORAGE_KEY = "nexocrm_v1";
 
@@ -2158,6 +2166,59 @@ document.getElementById("logoutBtn").addEventListener("click", async ()=>{
   showAuthScreen();
 });
 
+/* ============================================================================
+   PASSKEYS (WebAuthn) — feature experimental de Supabase Auth.
+   Requiere: 1) haberlo activado en el dashboard (Authentication → Passkeys),
+   2) que el CRM esté servido por HTTPS en un dominio real (no funciona con
+   file:// ni con "Continuar sin login"). Se detecta el soporte del navegador
+   antes de mostrar los botones para no confundir a quien no pueda usarlo.
+============================================================================ */
+const passkeysPosibles = supabaseConfigured && typeof window.PublicKeyCredential !== "undefined" && window.location.protocol === "https:";
+
+if(!passkeysPosibles){
+  const div = document.getElementById("passkeyDivider");
+  const btn = document.getElementById("passkeyLoginBtn");
+  if(div) div.style.display = "none";
+  if(btn) btn.style.display = "none";
+}
+
+const passkeyLoginBtn = document.getElementById("passkeyLoginBtn");
+if(passkeyLoginBtn){
+  passkeyLoginBtn.addEventListener("click", async ()=>{
+    setAuthError(null);
+    passkeyLoginBtn.disabled = true;
+    passkeyLoginBtn.textContent = "Esperando tu passkey...";
+    try{
+      const {data, error} = await sb.auth.signInWithPasskey();
+      if(error) throw error;
+      showApp(data.user?.email);
+    }catch(err){
+      setAuthError(err.message || "No se pudo iniciar sesión con passkey. Intenta con correo y contraseña.");
+      passkeyLoginBtn.disabled = false;
+      passkeyLoginBtn.textContent = "🔑 Iniciar sesión con passkey";
+    }
+  });
+}
+
+const addPasskeyBtn = document.getElementById("addPasskeyBtn");
+if(addPasskeyBtn){
+  if(!passkeysPosibles){ addPasskeyBtn.style.display = "none"; }
+  addPasskeyBtn.addEventListener("click", async ()=>{
+    addPasskeyBtn.disabled = true;
+    const original = addPasskeyBtn.textContent;
+    addPasskeyBtn.textContent = "Esperando...";
+    try{
+      const {data, error} = await sb.auth.registerPasskey();
+      if(error) throw error;
+      toast(`Passkey "${data.friendly_name || 'sin nombre'}" agregado — ya puedes usarlo para iniciar sesión`);
+    }catch(err){
+      toast(err.message || "No se pudo registrar el passkey", true);
+    }
+    addPasskeyBtn.disabled = false;
+    addPasskeyBtn.textContent = original;
+  });
+}
+
 /* Al cargar: si Supabase está configurado, revisa si ya hay una sesión activa
    (el usuario cerró el navegador y volvió, por ejemplo) y entra directo. */
 (async function initAuth(){
@@ -2169,6 +2230,7 @@ document.getElementById("logoutBtn").addEventListener("click", async ()=>{
     if(event === "SIGNED_OUT"){ showAuthScreen(); }
   });
 })();
+
 
 </script>
 </body>
