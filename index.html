@@ -395,7 +395,43 @@ const GOOGLE_MAPS_API_KEY = ""; // dejar vacío = usar OpenStreetMap (gratis, si
 
 const STORAGE_KEY = "nexocrm_v1";
 
+/* Mismo criterio para el contacto: si el prospecto tiene nombre y empresa, se refleja
+   también como contacto de esa empresa — así "Empresas y contactos" queda completo sin
+   captura manual duplicada. */
+function upsertContactoDesdeLead(lead, empresaId){
+  if(!empresaId || !lead.nombre) return;
+  const normalizado = normalizarTexto(`${lead.nombre} ${lead.apellido||''}`);
+  const existente = DB.contactos.find(c=> c.empresaId===empresaId && normalizarTexto(`${c.nombre} ${c.apellido||''}`)===normalizado);
+  if(existente){
+    existente.cargo = lead.cargo || existente.cargo;
+    existente.email = lead.email || existente.email;
+    existente.telefono = lead.telefono || existente.telefono;
+  }else{
+    DB.contactos.push({
+      id: uid(), empresaId, nombre: lead.nombre, apellido: lead.apellido||"",
+      cargo: lead.cargo||"", email: lead.email||"", telefono: lead.telefono||"",
+      principal: !DB.contactos.some(c=>c.empresaId===empresaId), // el primero de esa empresa queda como principal
+    });
+  }
+}
+
 function uid(){ return Math.random().toString(36).slice(2,10); }
+
+/* Antes el campo "Empresa" de un prospecto/cliente era texto libre, desconectado del módulo
+   "Empresas y contactos" — había que volver a escribir lo mismo dos veces. Ahora, al guardar
+   un prospecto o cliente con nombre de empresa, se busca o crea automáticamente su registro
+   real en Empresas (por coincidencia de nombre, sin distinguir mayúsculas/acentos), sin pedirle
+   nada extra al usuario. Devuelve el id de esa empresa para vincularla. */
+function upsertEmpresaDesdeNombre(nombre, pais){
+  const limpio = (nombre||"").trim();
+  if(!limpio) return null;
+  const normalizado = normalizarTexto(limpio);
+  let existente = DB.empresas.find(e=> normalizarTexto(e.nombre)===normalizado);
+  if(existente) return existente.id;
+  const nueva = {id: uid(), nombre: limpio, industria:"", ciudad:"", pais: pais||"Panamá"};
+  DB.empresas.push(nueva);
+  return nueva.id;
+}
 
 /* Registra en la bitácora quién hizo cada acción relevante, usando el correo con el que
    la persona inició sesión de verdad (no un campo elegido a mano) — así queda un historial
@@ -881,8 +917,10 @@ async function convertirLeadACliente(leadId){
   if(!l) return;
   l.estado = "convertido";
   if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
+  const empresaId = l.empresaId || upsertEmpresaDesdeNombre(l.empresaNombre, l.pais);
+  upsertContactoDesdeLead(l, empresaId);
   DB.clientes.push({
-    id:uid(), nombre: l.empresaNombre || `${l.nombre} ${l.apellido}`, empresaId:null, contactoId:null,
+    id:uid(), nombre: l.empresaNombre || `${l.nombre} ${l.apellido}`, empresaId, contactoId:null,
     segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
     ultimaCompra: todayISO(), valorTotal:0, ticketPromedio:0, compras:0, fechaConversion: todayISO(),
     notasSeguimiento: [{fecha: todayISO(), texto: `Convertido desde prospecto (${l.pais? paisInfo(l.pais)?.flag+' '+l.pais : 'sin país'})`, vendedorId: l.vendedorId}],
@@ -2452,7 +2490,7 @@ function bindModalEvents(){
       const id = saveClienteBtn.dataset.id;
       const data = {
         nombre,
-        empresaId: document.getElementById("cl_empresa").value || null,
+        empresaId: document.getElementById("cl_empresa").value || upsertEmpresaDesdeNombre(nombre), // vincula automáticamente si no se eligió una manualmente
         segmento: document.getElementById("cl_segmento").value,
         vendedorId: document.getElementById("cl_vendedor").value,
         riesgo: document.getElementById("cl_riesgo").value,
@@ -2835,6 +2873,8 @@ function bindModalEvents(){
       };
       const enc = calcularEncaje(data);
       data.puntosEncaje = enc.pts;
+      data.empresaId = upsertEmpresaDesdeNombre(data.empresaNombre, data.pais); // crea/vincula la ficha real en Empresas
+      upsertContactoDesdeLead(data, data.empresaId);
       saveLeadBtn.disabled = true;
       let idNuevoParaEnganche = null;
       if(id){
