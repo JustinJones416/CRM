@@ -266,21 +266,22 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 
 /* kanban */
 .kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;}
-.kcol{min-width:250px;background:#EEF0F5;border-radius:10px;padding:10px;flex:0 0 250px;}
+.kcol{min-width:260px;background:var(--paper);border-radius:12px;padding:12px;flex:0 0 260px;transition:background .15s;}
+.kcol.dragover{background:var(--accent-soft);outline:2px dashed var(--accent);outline-offset:-4px;}
 .kcol-head{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 10px;}
 .kcol-head .t{font-weight:700;font-size:13px;}
-.kcol-head .n{font-size:11.5px;color:var(--muted);font-family:'IBM Plex Mono';}
+.kcol-head .n{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono';background:#fff;padding:2px 8px;border-radius:20px;border:1px solid var(--line);}
 .kcol-sum{font-size:11px;color:var(--muted);padding:0 4px 8px;font-family:'IBM Plex Mono';}
-.kcard{background:#fff;border-radius:8px;padding:10px 11px;margin-bottom:8px;box-shadow:0 1px 2px rgba(18,24,43,.06);border:1px solid var(--line);cursor:grab;}
+.kcard{background:#fff;border-radius:10px;padding:12px 13px;margin-bottom:8px;box-shadow:0 1px 2px rgba(11,15,23,.05);border:1px solid var(--line);cursor:grab;transition:.15s;}
+.kcard:hover{box-shadow:var(--shadow-hover);border-color:#CBD9F9;transform:translateY(-1px);}
 .kcard:active{cursor:grabbing;}
 .kcard.drag{opacity:.4;}
 .kcard .name{font-weight:600;font-size:13px;margin-bottom:3px;}
-.kcard .company{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
-.kcard .foot{display:flex;justify-content:space-between;align-items:center;}
-.kcard .value{font-family:'IBM Plex Mono';font-weight:600;font-size:12.5px;}
+.kcard .company{font-size:11.5px;color:var(--muted);margin-bottom:8px;}
+.kcard .foot{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--paper);}
+.kcard .value{font-family:'IBM Plex Mono';font-weight:700;font-size:12.5px;color:var(--text);}
 .kcard .days{font-size:10.5px;color:var(--muted);}
 .kcard .days.stale{color:var(--red);font-weight:600;}
-.kcol.dragover{outline:2px dashed var(--accent);outline-offset:-4px;}
 
 /* timeline */
 .timeline{border-left:2px solid var(--line);margin-left:6px;padding-left:18px;}
@@ -847,16 +848,24 @@ function currentVendedorId(){ return currentVendedorIdCache; }
    Si no está configurado (o el usuario entró en "modo local"), se usa el
    arreglo local de siempre como respaldo, sin romper nada.
 ============================================================================ */
-async function cargarEquipoDesdeSupabase(){
-  if(!supabaseConfigured) return;
+/* Función genérica de carga — usada por las 7 entidades para no repetir el mismo
+   try/catch siete veces. mapper convierte cada fila (snake_case) al objeto JS (camelCase). */
+async function cargarTablaDesdeSupabase(tabla, campoOrden, ascendente, mapper, etiqueta){
+  if(!supabaseConfigured) return [];
   try{
-    const {data, error} = await sb.from("vendedores").select("*").order("creado_en", {ascending:true});
+    const {data, error} = await sb.from(tabla).select("*").order(campoOrden, {ascending: ascendente});
     if(error) throw error;
-    DB.vendedores = (data||[]).map(v=>({id:v.id, nombre:v.nombre, rol:v.rol, email:v.email}));
+    return (data||[]).map(mapper);
   }catch(err){
-    console.warn("No se pudo cargar el equipo desde Supabase (¿falta correr supabase_migration.sql?):", err.message);
-    toast("No se pudo sincronizar el equipo con Supabase — revisa SUPABASE_SETUP.md", true);
+    console.warn(`No se pudo cargar ${etiqueta} desde Supabase (¿falta correr supabase_migration.sql?):`, err.message);
+    toast(`No se pudo sincronizar ${etiqueta} con Supabase — revisa SUPABASE_SETUP.md`, true);
+    return null; // null = falló de verdad; distinto de [] = se sincronizó pero está vacío
   }
+}
+
+async function cargarEquipoDesdeSupabase(){
+  const r = await cargarTablaDesdeSupabase("vendedores", "creado_en", true, v=>({id:v.id, nombre:v.nombre, rol:v.rol, email:v.email}), "el equipo");
+  if(r) DB.vendedores = r;
 }
 
 /* ============================================================================
@@ -880,7 +889,7 @@ function leadAFila(l){
   return {
     nombre: l.nombre, apellido: l.apellido||"", empresa_nombre: l.empresaNombre||"", cargo: l.cargo||"",
     email: l.email||"", telefono: l.telefono||"", pais: l.pais||"", colaboradores: l.colaboradores||0,
-    nicho: l.nicho||"Otro", falencia: l.falencia||"", fuente: l.fuente||"", vendedor_id: l.vendedorId||null,
+    nicho: l.nicho||"Otro", falencia: l.falencia||"", fuente: l.fuente||"", vendedor_id: idORNull(l.vendedorId),
     producto_interes: l.productoInteres||"", presupuesto: l.presupuesto||0, prioridad: l.prioridad||"media",
     estado: l.estado||"nuevo", puntuacion: l.puntuacion||0, puntos_encaje: l.puntosEncaje||0,
     motivo_descarte: l.motivoDescarte||"", google_rating: l.googleRating||null,
@@ -890,15 +899,8 @@ function leadAFila(l){
   };
 }
 async function cargarLeadsDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("leads").select("*").order("fecha_ingreso", {ascending:false});
-    if(error) throw error;
-    DB.leads = (data||[]).map(leadDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar prospectos desde Supabase (¿falta correr supabase_migration.sql?):", err.message);
-    toast("No se pudo sincronizar prospectos con Supabase — revisa SUPABASE_SETUP.md", true);
-  }
+  const r = await cargarTablaDesdeSupabase("leads", "fecha_ingreso", false, leadDesdeFila, "prospectos");
+  if(r) DB.leads = r;
 }
 
 /* ============================================================================
@@ -915,23 +917,16 @@ function clienteDesdeFila(r){
 }
 function clienteAFila(c){
   return {
-    nombre: c.nombre, empresa_id: c.empresaId||null, contacto_id: c.contactoId||null,
-    segmento: c.segmento||"Nuevo", vendedor_id: c.vendedorId||null, riesgo: c.riesgo||"bajo",
+    nombre: c.nombre, empresa_id: idORNull(c.empresaId), contacto_id: idORNull(c.contactoId),
+    segmento: c.segmento||"Nuevo", vendedor_id: idORNull(c.vendedorId), riesgo: c.riesgo||"bajo",
     ultima_compra: c.ultimaCompra||todayISO(), valor_total: c.valorTotal||0,
     ticket_promedio: c.ticketPromedio||0, compras: c.compras||0,
     fecha_conversion: c.fechaConversion||todayISO(), notas_seguimiento: c.notasSeguimiento||[],
   };
 }
 async function cargarClientesDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("clientes").select("*").order("fecha_conversion", {ascending:false});
-    if(error) throw error;
-    DB.clientes = (data||[]).map(clienteDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar clientes desde Supabase:", err.message);
-    toast("No se pudo sincronizar clientes con Supabase — revisa SUPABASE_SETUP.md", true);
-  }
+  const r = await cargarTablaDesdeSupabase("clientes", "fecha_conversion", false, clienteDesdeFila, "clientes");
+  if(r) DB.clientes = r;
 }
 async function guardarClienteEnSupabase(cliente, esNuevo){
   const data = await guardarConReintento("clientes", clienteAFila(cliente), esNuevo, cliente.id, "el cliente");
@@ -948,14 +943,8 @@ function empresaAFila(e){
   return {nombre: e.nombre, industria: e.industria||"", ciudad: e.ciudad||"", pais: e.pais||""};
 }
 async function cargarEmpresasDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("empresas").select("*").order("nombre", {ascending:true});
-    if(error) throw error;
-    DB.empresas = (data||[]).map(empresaDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar empresas desde Supabase:", err.message);
-  }
+  const r = await cargarTablaDesdeSupabase("empresas", "nombre", true, empresaDesdeFila, "empresas");
+  if(r) DB.empresas = r;
 }
 async function guardarEmpresaEnSupabase(empresa, esNuevo){
   const data = await guardarConReintento("empresas", empresaAFila(empresa), esNuevo, empresa.id, "la empresa");
@@ -966,17 +955,11 @@ function contactoDesdeFila(r){
   return {id: r.id, empresaId: r.empresa_id, nombre: r.nombre, apellido: r.apellido||"", cargo: r.cargo||"", email: r.email||"", telefono: r.telefono||"", principal: !!r.principal};
 }
 function contactoAFila(c){
-  return {empresa_id: c.empresaId, nombre: c.nombre, apellido: c.apellido||"", cargo: c.cargo||"", email: c.email||"", telefono: c.telefono||"", principal: !!c.principal};
+  return {empresa_id: idORNull(c.empresaId), nombre: c.nombre, apellido: c.apellido||"", cargo: c.cargo||"", email: c.email||"", telefono: c.telefono||"", principal: !!c.principal};
 }
 async function cargarContactosDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("contactos").select("*");
-    if(error) throw error;
-    DB.contactos = (data||[]).map(contactoDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar contactos desde Supabase:", err.message);
-  }
+  const r = await cargarTablaDesdeSupabase("contactos", "nombre", true, contactoDesdeFila, "contactos");
+  if(r) DB.contactos = r;
 }
 async function guardarContactoEnSupabase(contacto, esNuevo){
   const data = await guardarConReintento("contactos", contactoAFila(contacto), esNuevo, contacto.id, "el contacto");
@@ -996,22 +979,15 @@ function oportunidadDesdeFila(r){
 }
 function oportunidadAFila(o){
   return {
-    nombre: o.nombre, empresa_id: o.empresaId||null, cliente_id: o.clienteId||null,
-    vendedor_id: o.vendedorId||null, valor: o.valor||0, etapa: o.etapa||"nuevo",
+    nombre: o.nombre, empresa_id: idORNull(o.empresaId), cliente_id: idORNull(o.clienteId),
+    vendedor_id: idORNull(o.vendedorId), valor: o.valor||0, etapa: o.etapa||"nuevo",
     probabilidad: o.probabilidad||0, estado_agente_ia: o.estadoAgenteIA||"No implementado",
     dias_etapa_desde: o.diasEtapaDesde||todayISO(),
   };
 }
 async function cargarOportunidadesDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("oportunidades").select("*");
-    if(error) throw error;
-    DB.oportunidades = (data||[]).map(oportunidadDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar oportunidades desde Supabase:", err.message);
-    toast("No se pudo sincronizar oportunidades con Supabase — revisa SUPABASE_SETUP.md", true);
-  }
+  const r = await cargarTablaDesdeSupabase("oportunidades", "dias_etapa_desde", false, oportunidadDesdeFila, "oportunidades");
+  if(r) DB.oportunidades = r;
 }
 async function guardarOportunidadEnSupabase(op, esNuevo){
   const data = await guardarConReintento("oportunidades", oportunidadAFila(op), esNuevo, op.id, "la oportunidad");
@@ -1025,17 +1001,11 @@ function tareaDesdeFila(r){
   return {id: r.id, tipo: r.tipo||"tarea", titulo: r.titulo, fecha: r.fecha, estado: r.estado||"pendiente", vendedorId: r.vendedor_id||"", leadId: r.lead_id||null};
 }
 function tareaAFila(t){
-  return {tipo: t.tipo||"tarea", titulo: t.titulo, fecha: t.fecha, estado: t.estado||"pendiente", vendedor_id: t.vendedorId||null, lead_id: t.leadId||null};
+  return {tipo: t.tipo||"tarea", titulo: t.titulo, fecha: t.fecha, estado: t.estado||"pendiente", vendedor_id: idORNull(t.vendedorId), lead_id: idORNull(t.leadId)};
 }
 async function cargarTareasDesdeSupabase(){
-  if(!supabaseConfigured) return;
-  try{
-    const {data, error} = await sb.from("actividades").select("*").order("fecha", {ascending:true});
-    if(error) throw error;
-    DB.actividades = (data||[]).map(tareaDesdeFila);
-  }catch(err){
-    console.warn("No se pudo cargar tareas desde Supabase:", err.message);
-  }
+  const r = await cargarTablaDesdeSupabase("actividades", "fecha", true, tareaDesdeFila, "tareas");
+  if(r) DB.actividades = r;
 }
 async function guardarTareaEnSupabase(tarea, esNuevo){
   const data = await guardarConReintento("actividades", tareaAFila(tarea), esNuevo, tarea.id, "la tarea");
@@ -1048,6 +1018,16 @@ async function guardarTareaEnSupabase(tarea, esNuevo){
    sí existen en la base de datos, y devuelve errores como "Could not find the 'x' column".
    En vez de bloquear al usuario por esto, reintenta automáticamente quitando esa columna del
    envío (se guarda todo lo demás) y avisa cuál campo no se pudo sincronizar esta vez. */
+/* Los ids que Supabase genera son UUID reales; los que se crean localmente (antes de
+   sincronizar, o en modo sin conexión) tienen otro formato y Supabase los rechaza como
+   clave foránea. En vez de que eso rompa el guardado, se valida antes de enviar: si no
+   es un UUID real, se manda vacío (se sincroniza solo cuando ese registro relacionado
+   ya tenga su id verdadero). */
+function esUUID(v){
+  return typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+}
+function idORNull(v){ return esUUID(v) ? v : null; }
+
 function extraerColumnaFaltante(mensajeError){
   const m = /Could not find the '([a-z_]+)' column/i.exec(mensajeError||"");
   return m ? m[1] : null;
@@ -1102,9 +1082,6 @@ async function eliminarConReintento(tabla, id, etiqueta){
 async function guardarLeadEnSupabase(lead, esNuevo){
   const data = await guardarConReintento("leads", leadAFila(lead), esNuevo, lead.id, "el prospecto");
   return data ? leadDesdeFila(data) : null;
-}
-async function eliminarLeadEnSupabase(id){
-  return eliminarConReintento("leads", id, "el prospecto");
 }
 
 async function ensureVendedorForUser(email){
@@ -1887,6 +1864,7 @@ function leadForm(lead){
     ${lead? (descartado
       ? `<button class="btn" id="btnReactivar" data-id="${l.id}">↩ Reactivar prospecto</button>`
       : `<button class="btn" id="btnDescartar" data-id="${l.id}" style="border-color:var(--red);color:var(--red);">🗑 Descartar</button>`) : ""}
+    ${(lead && descartado)? `<button class="btn" id="btnEliminarLead" data-id="${l.id}" style="border-color:var(--red);color:var(--red);">🗑 Eliminar definitivamente</button>` : ""}
     <button class="btn btn-primary" id="saveLead" data-id="${lead? lead.id:''}">Guardar prospecto</button>
   </div>`;
 }
@@ -2317,8 +2295,9 @@ function clientePerfil(c){
       <div class="tl-item"><div class="tl-date">${fmtDate(c.fechaConversion)}</div><div class="tl-title">Prospecto convertido a cliente</div></div>
     </div>
   </div>
-  <div class="modal-foot">
+  <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cerrar</button>
+    <button class="btn" id="btnEliminarCliente" data-id="${c.id}" style="border-color:var(--red);color:var(--red);">🗑 Eliminar</button>
     <button class="btn" id="btnEnganches" data-id="${c.id}" data-tipo="cliente" style="border-color:var(--info);color:var(--info);">💬 Mensajes de captación</button>
     <button class="btn btn-primary" id="btnEditarCliente" data-id="${c.id}">Editar cliente</button>
   </div>`;
@@ -2382,10 +2361,12 @@ function empresaPerfil(e){
           <b>${c.nombre} ${c.apellido}</b> ${c.principal?'<span class="badge badge-calificado">Principal</span>':''}<br>
           <span style="color:var(--muted);font-size:12.5px;">${c.cargo} · ${c.email} · ${c.telefono}</span>
         </div>
+        <button class="btn btn-sm" data-eliminar-contacto="${c.id}" style="border-color:var(--red);color:var(--red);">✕</button>
       </div>`).join("") || `<div class="empty">Esta empresa aún no tiene contactos registrados.</div>`}
   </div>
-  <div class="modal-foot">
+  <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cerrar</button>
+    <button class="btn" id="btnEliminarEmpresa" data-id="${e.id}" style="border-color:var(--red);color:var(--red);">🗑 Eliminar</button>
     <button class="btn btn-primary" id="btnEditarEmpresa" data-id="${e.id}">Editar empresa</button>
   </div>`;
 }
@@ -2542,6 +2523,7 @@ function oportunidadForm(op){
   </div>
   <div class="modal-foot">
     <button class="btn" data-close>Cancelar</button>
+    ${op? `<button class="btn" id="btnEliminarOp" data-id="${op.id}" style="border-color:var(--red);color:var(--red);">🗑 Eliminar</button>` : ""}
     <button class="btn btn-primary" id="saveOp" data-id="${op? op.id:''}">${op? "Guardar cambios":"Guardar oportunidad"}</button>
   </div>`;
 }
@@ -2928,6 +2910,20 @@ function bindModalEvents(){
     if(c) openModal(clienteForm(c));
   });
 
+  // Eliminar cliente definitivamente
+  const btnEliminarCliente = document.getElementById("btnEliminarCliente");
+  if(btnEliminarCliente) btnEliminarCliente.addEventListener("click", async ()=>{
+    const c = DB.clientes.find(x=>x.id===btnEliminarCliente.dataset.id);
+    if(!c) return;
+    if(!confirm(`¿Eliminar definitivamente a "${c.nombre}"? Se perderá su historial y notas de seguimiento. Esta acción no se puede deshacer.`)) return;
+    if(supabaseConfigured) await eliminarConReintento("clientes", c.id, "el cliente");
+    DB.clientes = DB.clientes.filter(x=>x.id!==c.id);
+    save();
+    registrarActividad("Eliminó cliente", c.nombre);
+    toast("Cliente eliminado");
+    closeModal(); renderView();
+  });
+
   // Nota de seguimiento de progreso (dentro del perfil de cliente)
   const btnAgregarNota = document.getElementById("btnAgregarNota");
   if(btnAgregarNota) btnAgregarNota.addEventListener("click", ()=>{
@@ -2952,6 +2948,20 @@ function bindModalEvents(){
     registrarActividad("Agregó nota de seguimiento", `${c.nombre} — ${texto.slice(0,60)}`);
     toast("Nota de seguimiento guardada");
     openModal(clientePerfil(c));
+  });
+
+  // Eliminar prospecto definitivamente (distinto de "Descartar", que es reversible)
+  const btnEliminarLead = document.getElementById("btnEliminarLead");
+  if(btnEliminarLead) btnEliminarLead.addEventListener("click", async ()=>{
+    const l = DB.leads.find(x=>x.id===btnEliminarLead.dataset.id);
+    if(!l) return;
+    if(!confirm(`¿Eliminar definitivamente a "${l.nombre} ${l.apellido}"? Esta acción no se puede deshacer.`)) return;
+    if(supabaseConfigured) await eliminarConReintento("leads", l.id, "el prospecto");
+    DB.leads = DB.leads.filter(x=>x.id!==l.id);
+    save();
+    registrarActividad("Eliminó prospecto", `${l.nombre} ${l.apellido}`);
+    toast("Prospecto eliminado");
+    closeModal(); renderView();
   });
 
   // Descartar prospecto (abre modal de motivo)
@@ -3369,6 +3379,36 @@ function bindModalEvents(){
     if(e) openModal(empresaForm(e));
   });
 
+  // Eliminar empresa definitivamente (y sus contactos)
+  const btnEliminarEmpresa = document.getElementById("btnEliminarEmpresa");
+  if(btnEliminarEmpresa) btnEliminarEmpresa.addEventListener("click", async ()=>{
+    const e = DB.empresas.find(x=>x.id===btnEliminarEmpresa.dataset.id);
+    if(!e) return;
+    if(!confirm(`¿Eliminar definitivamente "${e.nombre}" y todos sus contactos? Esta acción no se puede deshacer.`)) return;
+    if(supabaseConfigured) await eliminarConReintento("empresas", e.id, "la empresa"); // el "on delete cascade" de Supabase borra sus contactos también
+    DB.empresas = DB.empresas.filter(x=>x.id!==e.id);
+    DB.contactos = DB.contactos.filter(x=>x.empresaId!==e.id);
+    save();
+    registrarActividad("Eliminó empresa", e.nombre);
+    toast("Empresa eliminada");
+    closeModal(); renderView();
+  });
+
+  // Eliminar un contacto individual (dentro del perfil de empresa)
+  document.querySelectorAll("[data-eliminar-contacto]").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const c = DB.contactos.find(x=>x.id===btn.dataset.eliminarContacto);
+      if(!c) return;
+      if(!confirm(`¿Eliminar al contacto "${c.nombre} ${c.apellido}"?`)) return;
+      if(supabaseConfigured) await eliminarConReintento("contactos", c.id, "el contacto");
+      DB.contactos = DB.contactos.filter(x=>x.id!==c.id);
+      save();
+      toast("Contacto eliminado");
+      const e = DB.empresas.find(x=>x.id===c.empresaId);
+      openModal(empresaPerfil(e));
+    });
+  });
+
   // Agregar contacto a una empresa (desde su perfil)
   const btnAgregarContacto = document.getElementById("btnAgregarContacto");
   if(btnAgregarContacto) btnAgregarContacto.addEventListener("click", ()=>{
@@ -3430,6 +3470,20 @@ function bindModalEvents(){
   }
 
   // Guardar oportunidad (nueva o edición)
+  // Eliminar oportunidad definitivamente
+  const btnEliminarOp = document.getElementById("btnEliminarOp");
+  if(btnEliminarOp) btnEliminarOp.addEventListener("click", async ()=>{
+    const op = DB.oportunidades.find(x=>x.id===btnEliminarOp.dataset.id);
+    if(!op) return;
+    if(!confirm(`¿Eliminar definitivamente la oportunidad "${op.nombre}"? Esta acción no se puede deshacer.`)) return;
+    if(supabaseConfigured) await eliminarConReintento("oportunidades", op.id, "la oportunidad");
+    DB.oportunidades = DB.oportunidades.filter(x=>x.id!==op.id);
+    save();
+    registrarActividad("Eliminó oportunidad", op.nombre);
+    toast("Oportunidad eliminada");
+    closeModal(); renderView();
+  });
+
   const saveOpBtn = document.getElementById("saveOp");
   if(saveOpBtn){
     saveOpBtn.addEventListener("click", async ()=>{
