@@ -10,25 +10,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
-  --ink:#12182B;
-  --ink2:#1B2340;
-  --paper:#F5F6F9;
+  --ink:#0F172A;
+  --ink2:#1E293B;
+  --paper:#F8FAFC;
   --card:#FFFFFF;
-  --line:#E4E6EE;
-  --text:#1B2340;
-  --muted:#6B7080;
-  --accent:#0F8B7F;
-  --accent2:#14B8A6;
-  --accent-soft:#E4F5F2;
-  --info:#4C5FD5;
-  --info-soft:#EBEDFB;
-  --amber:#B9791A;
-  --amber-soft:#FCF1DD;
-  --red:#C6432A;
-  --red-soft:#FBE8E3;
+  --line:#E2E8F0;
+  --text:#1E293B;
+  --muted:#64748B;
+  --accent:#4F46E5;
+  --accent2:#6366F1;
+  --accent-soft:#EEF2FF;
+  --info:#0EA5E9;
+  --info-soft:#F0F9FF;
+  --amber:#D97706;
+  --amber-soft:#FFFBEB;
+  --red:#DC2626;
+  --red-soft:#FEF2F2;
   --radius:12px;
-  --shadow:0 1px 2px rgba(18,24,43,.04), 0 8px 24px rgba(18,24,43,.06);
-  --shadow-hover:0 4px 10px rgba(18,24,43,.06), 0 14px 32px rgba(18,24,43,.09);
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
+  --shadow-hover:0 4px 10px rgba(15,23,42,.05), 0 14px 32px rgba(15,23,42,.08);
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--text);font-size:14px;}
@@ -42,7 +42,7 @@ a{color:inherit;}
 .shell.collapsed{grid-template-columns:64px 1fr;}
 .sidebar{background:linear-gradient(180deg,var(--ink),#0D1220);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:padding .18s;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
-.brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0B6259);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
+.brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
 .brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
 .brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;white-space:nowrap;}
 .navgroup{margin-bottom:4px;}
@@ -82,14 +82,14 @@ a{color:inherit;}
 .gsr-item .gsr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
 .gsr-empty{padding:14px;text-align:center;color:var(--muted);font-size:12.5px;}
 
-.content{padding:22px;max-width:1400px;}
+.content{padding:18px;max-width:1400px;}
 body.dense .content{padding:14px;}
 .view{display:none;}
 .view.active{display:block;animation:fadein .18s ease;}
 @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* ---------- COMMON ---------- */
-.grid{display:grid;gap:14px;}
+.grid{display:grid;gap:12px;}
 body.dense .grid{gap:8px;}
 .cols-4{grid-template-columns:repeat(4,1fr);}
 .cols-3{grid-template-columns:repeat(3,1fr);}
@@ -97,11 +97,11 @@ body.dense .grid{gap:8px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .18s, transform .18s;}
 .card-pad{padding:16px 18px;}
 body.dense .card-pad{padding:10px 12px;}
-.section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:26px 0 10px;}
+.section-title{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 9px;}
 body.dense .section-title{margin:14px 0 6px;font-size:11.5px;}
 .section-title:first-child{margin-top:0;}
 
-.kpi{padding:16px 17px;position:relative;overflow:hidden;}
+.kpi{padding:14px 15px;position:relative;overflow:hidden;}
 .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .18s;}
 .kpi.clickable:hover::before{opacity:1;}
 body.dense .kpi{padding:9px 11px;}
@@ -121,8 +121,8 @@ body.dense .kpi .value{font-size:19px;margin:2px 0 4px;}
 .btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:.15s;}
 .btn:hover{border-color:#c7cade;transform:translateY(-1px);}
 .btn:active{transform:translateY(0);}
-.btn-primary{background:linear-gradient(135deg,var(--ink2),#232C52);color:#fff;border-color:var(--ink2);}
-.btn-primary:hover{background:linear-gradient(135deg,#232C52,var(--ink2));box-shadow:0 4px 14px rgba(27,35,64,.25);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:var(--accent);}
+.btn-primary:hover{background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 4px 14px rgba(79,70,229,.28);}
 .btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:var(--accent);}
 .btn-accent:hover{box-shadow:0 4px 14px rgba(15,139,127,.25);}
 .btn-sm{padding:5px 10px;font-size:12px;}
@@ -174,7 +174,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
 
 /* modal */
-.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--ink2),#0E1530);display:flex;align-items:center;justify-content:center;z-index:5000;padding:16px;}
+.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--ink),var(--ink2));display:flex;align-items:center;justify-content:center;z-index:5000;padding:16px;}
 .auth-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
 .auth-tabs{display:flex;gap:4px;background:var(--paper);border-radius:10px;padding:4px;margin-bottom:18px;}
 .auth-tab{flex:1;border:none;background:transparent;padding:8px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;}
@@ -553,17 +553,32 @@ function calcularPrecioOportunidad(serviciosIds){
 /* --------------------------- GENERADOR DE MENSAJES DE CAPTACIÓN (por nicho + falencia) --------------------------- */
 /* No usa una API externa de IA (este archivo no tiene backend propio para exponer una llave de
    forma segura) — en su lugar arma el mensaje combinando: el dolor típico de su nicho, su falencia
-   real si la registraste, y el servicio del catálogo que mejor la resuelve. Sigue siendo un punto
-   de partida personalizado y editable, no un genérico. */
-function generarEnganches(lead){
+   real si la registraste, el detalle personal que el vendedor haya observado (si respondió las
+   preguntas rápidas), y el servicio del catálogo que mejor lo resuelve. Sigue siendo un punto de
+   partida personalizado y editable, no un genérico. */
+function generarEnganches(lead, personalizacion){
   const nicho = NICHOS.includes(lead.nicho) ? lead.nicho : "Otro";
   const empresa = lead.empresaNombre || "tu negocio";
   const nombre = lead.nombre || "";
   const dolorPropio = lead.falencia && lead.falencia.trim().length>5 ? lead.falencia.trim() : null;
+  const detalleObservado = personalizacion?.detalle?.trim() || null;
+  const tono = personalizacion?.tono || "cercano";
+
+  const aperturas = {
+    cercano: (n,e)=> `Hola ${n}${n?', ':''}vi que ${e} `,
+    profesional: (n,e)=> `Hola ${n||''}${n?', ':''}me comunico de parte de OmniCore AI. Estuve revisando ${e} y `,
+    directo: (n,e)=> `${n?n+', s':'S'}in vueltas: ${e} `,
+  };
+  const cierres = {
+    cercano: (e)=> `¿Tienes 5 minutos esta semana para mostrarte cómo se vería en ${e}?`,
+    profesional: (e)=> `Me encantaría coordinar una breve llamada de 10 minutos para mostrarle cómo aplicaría en ${e}, ¿tiene disponibilidad esta semana?`,
+    directo: (e)=> `¿Agendamos 5 minutos esta semana? Te muestro el caso real en ${e}, sin compromiso.`,
+  };
 
   return SERVICIOS.map(s=>{
     const dolor = dolorPropio || s.enganches[nicho] || s.enganches.Otro;
-    const mensaje = `Hola ${nombre}${nombre?', ':''}vi que ${empresa} es un negocio de ${nicho.toLowerCase()==='otro'?'este rubro':nicho.toLowerCase()} y muchos como este ${dolor}. ${s.icono} Con ${s.nombre.toLowerCase()} resolvemos justo eso — implementación en días, no meses. ¿Tienes 5 minutos esta semana para mostrarte cómo se vería en ${empresa}?`;
+    const observacion = detalleObservado ? ` Además noté que ${detalleObservado}.` : "";
+    const mensaje = `${aperturas[tono](nombre,empresa)}es un negocio de ${nicho.toLowerCase()==='otro'?'este rubro':nicho.toLowerCase()} y muchos como este ${dolor}.${observacion} ${s.icono} Con ${s.nombre.toLowerCase()} resolvemos justo eso — implementación en días, no meses. ${cierres[tono](empresa)}`;
     return {servicio:s, mensaje};
   });
 }
@@ -768,22 +783,46 @@ async function cargarLeadsDesdeSupabase(){
 }
 /* Guarda un prospecto (nuevo o existente) en Supabase y devuelve el objeto ya con su id real.
    Si Supabase no está configurado o falla, devuelve null y quien llama debe usar el respaldo local. */
+/* El caché de esquema de Supabase (PostgREST) a veces tarda en "enterarse" de columnas que
+   sí existen en la base de datos, y devuelve errores como "Could not find the 'x' column".
+   En vez de bloquear al usuario por esto, reintenta automáticamente quitando esa columna del
+   envío (se guarda todo lo demás) y avisa cuál campo no se pudo sincronizar esta vez. */
+function extraerColumnaFaltante(mensajeError){
+  const m = /Could not find the '([a-z_]+)' column/i.exec(mensajeError||"");
+  return m ? m[1] : null;
+}
+
 async function guardarLeadEnSupabase(lead, esNuevo){
   if(!supabaseConfigured) return null;
-  try{
-    if(esNuevo){
-      const {data, error} = await sb.from("leads").insert(leadAFila(lead)).select().single();
+  let fila = leadAFila(lead);
+  for(let intento=0; intento<6; intento++){
+    try{
+      const query = esNuevo
+        ? sb.from("leads").insert(fila).select().single()
+        : sb.from("leads").update(fila).eq("id", lead.id).select().single();
+      const {data, error} = await query;
       if(error) throw error;
       return leadDesdeFila(data);
-    }else{
-      const {data, error} = await sb.from("leads").update(leadAFila(lead)).eq("id", lead.id).select().single();
-      if(error) throw error;
-      return leadDesdeFila(data);
+    }catch(err){
+      const columnaFaltante = extraerColumnaFaltante(err.message);
+      if(columnaFaltante && columnaFaltante in fila){
+        // Reintenta sin esa columna — probablemente el caché de esquema de Supabase está
+        // desactualizado. Ese dato queda sin sincronizar esta vez, pero el resto sí se guarda.
+        delete fila[columnaFaltante];
+        continue;
+      }
+      toast(err.message || "No se pudo guardar el prospecto en Supabase", true);
+      return null;
     }
-  }catch(err){
-    toast(err.message || "No se pudo guardar el prospecto en Supabase", true);
-    return null;
   }
+  toast("Se guardó en Supabase, pero varias columnas no están sincronizadas todavía — corre 'notify pgrst, reload schema;' en el SQL Editor", true);
+  try{
+    const query = esNuevo
+      ? sb.from("leads").insert(fila).select().single()
+      : sb.from("leads").update(fila).eq("id", lead.id).select().single();
+    const {data} = await query;
+    return data ? leadDesdeFila(data) : null;
+  }catch(e){ return null; }
 }
 async function eliminarLeadEnSupabase(id){
   if(!supabaseConfigured) return true;
@@ -1492,7 +1531,7 @@ function leadForm(lead){
   </div>
   <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cancelar</button>
-    ${lead? `<button class="btn" id="btnEnganches" data-id="${l.id}" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>` : ""}
+    ${lead? `<button class="btn" id="btnEnganches" data-id="${l.id}" data-tipo="lead" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>` : ""}
     ${lead? `<button class="btn" id="btnAgendar" data-id="${l.id}" style="border-color:var(--info);color:var(--info);">📅 Agendar reunión</button>` : ""}
     ${lead? (descartado
       ? `<button class="btn" id="btnReactivar" data-id="${l.id}">↩ Reactivar prospecto</button>`
@@ -1503,13 +1542,47 @@ function leadForm(lead){
 
 /* --------------------------- DESCARTAR PROSPECTO --------------------------- */
 /* --------------------------- MENSAJES DE CAPTACIÓN SUGERIDOS --------------------------- */
-function enganchesModal(leadId){
-  const l = DB.leads.find(x=>x.id===leadId);
-  const opciones = generarEnganches(l);
+/* --------------------------- PERSONALIZACIÓN RÁPIDA (antes de generar los mensajes) --------------------------- */
+/* Ya que no hay una IA real leyendo el contexto, esto le pregunta directamente al vendedor
+   qué notó de particular en el negocio — es lo que hace que el mensaje no suene genérico. */
+function personalizacionForm(entidadId, tipo){
+  return `
+  <div class="modal-head"><h3>Antes de generar el mensaje...</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Dos preguntas rápidas (opcionales) para que el mensaje no suene genérico. Puedes saltarlas si no tienes nada a mano.</p>
+    <div class="field" style="margin-bottom:12px;">
+      <label>¿Notaste algo particular de este negocio? (reseñas, promoción, competencia, temporada alta...)</label>
+      <textarea id="perso_detalle" rows="3" placeholder="Ej: vi en sus reseñas de Google que se quejan de la demora en confirmar reservas"></textarea>
+    </div>
+    <div class="field">
+      <label>Tono del mensaje</label>
+      <select id="perso_tono">
+        <option value="cercano">Cercano y conversacional</option>
+        <option value="profesional">Profesional y formal</option>
+        <option value="directo">Directo, al grano</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" id="btnSaltarPersonalizacion" data-id="${entidadId}" data-tipo="${tipo}">Saltar</button>
+    <button class="btn btn-primary" id="btnGenerarConPersonalizacion" data-id="${entidadId}" data-tipo="${tipo}">Generar mensajes →</button>
+  </div>`;
+}
+
+function enganchesModal(entidadId, tipo, personalizacion){
+  tipo = tipo || "lead";
+  let objetoBase;
+  if(tipo==="cliente"){
+    const c = DB.clientes.find(x=>x.id===entidadId);
+    objetoBase = {nombre: c.nombre, apellido:"", empresaNombre: c.nombre, nicho: "Otro", falencia:""};
+  }else{
+    objetoBase = DB.leads.find(x=>x.id===entidadId);
+  }
+  const opciones = generarEnganches(objetoBase, personalizacion);
   return `
   <div class="modal-head"><h3>💬 Mensajes de captación sugeridos</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
-    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Basados en el nicho (${l.nicho||'Otro'}) y la falencia registrada de <b>${l.empresaNombre||l.nombre}</b>. Son un punto de partida — edítalos a tu estilo antes de enviarlos.</p>
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Basados en ${tipo==='cliente'?'los datos disponibles de':'el nicho ('+(objetoBase.nicho||'Otro')+') y la falencia registrada de'} <b>${objetoBase.empresaNombre||objetoBase.nombre}</b>. Son un punto de partida — edítalos a tu estilo antes de enviarlos.</p>
     ${opciones.map((o,i)=>`
       <div class="card card-pad" style="margin-bottom:10px;">
         <b>${o.servicio.icono} ${o.servicio.nombre}</b>
@@ -1517,7 +1590,10 @@ function enganchesModal(leadId){
         <button class="btn btn-sm" style="margin-top:8px;" data-copiar="eng_${i}">📋 Copiar mensaje</button>
       </div>`).join("")}
   </div>
-  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+  <div class="modal-foot" style="flex-wrap:wrap;">
+    <button class="btn" id="btnRepersonalizar" data-id="${entidadId}" data-tipo="${tipo}">✏️ Cambiar personalización</button>
+    <button class="btn" data-close>Cerrar</button>
+  </div>`;
 }
 
 function descarteForm(leadId){
@@ -1885,6 +1961,7 @@ function clientePerfil(c){
   </div>
   <div class="modal-foot">
     <button class="btn" data-close>Cerrar</button>
+    <button class="btn" id="btnEnganches" data-id="${c.id}" data-tipo="cliente" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>
     <button class="btn btn-primary" id="btnEditarCliente" data-id="${c.id}">Editar cliente</button>
   </div>`;
 }
@@ -2383,16 +2460,25 @@ function bindModalEvents(){
         ticketPromedio: Number(document.getElementById("cl_ticket").value)||0,
         compras: Number(document.getElementById("cl_compras").value)||0,
       };
+      let idNuevoClienteParaEnganche = null;
       if(id){
         Object.assign(DB.clientes.find(c=>c.id===id), data);
         registrarActividad("Editó cliente", data.nombre);
         toast("Cliente actualizado");
       }else{
-        DB.clientes.push({...data, id:uid(), ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]});
+        const nuevoId = uid();
+        DB.clientes.push({...data, id:nuevoId, ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]});
+        idNuevoClienteParaEnganche = nuevoId;
         registrarActividad("Creó cliente", data.nombre);
         toast("Cliente creado");
       }
-      save(); closeModal(); renderView();
+      save();
+      if(idNuevoClienteParaEnganche){
+        renderView();
+        openModal(personalizacionForm(idNuevoClienteParaEnganche, "cliente"));
+      }else{
+        closeModal(); renderView();
+      }
     });
   }
 
@@ -2467,7 +2553,19 @@ function bindModalEvents(){
 
   // Mensajes de captación sugeridos (basados en nicho + falencia + catálogo de servicios)
   const btnEnganches = document.getElementById("btnEnganches");
-  if(btnEnganches) btnEnganches.addEventListener("click", ()=> openModal(enganchesModal(btnEnganches.dataset.id)));
+  if(btnEnganches) btnEnganches.addEventListener("click", ()=> openModal(personalizacionForm(btnEnganches.dataset.id, btnEnganches.dataset.tipo||"lead")));
+  const btnSaltarPersonalizacion = document.getElementById("btnSaltarPersonalizacion");
+  if(btnSaltarPersonalizacion) btnSaltarPersonalizacion.addEventListener("click", ()=> openModal(enganchesModal(btnSaltarPersonalizacion.dataset.id, btnSaltarPersonalizacion.dataset.tipo)));
+  const btnGenerarConPersonalizacion = document.getElementById("btnGenerarConPersonalizacion");
+  if(btnGenerarConPersonalizacion) btnGenerarConPersonalizacion.addEventListener("click", ()=>{
+    const personalizacion = {
+      detalle: document.getElementById("perso_detalle").value,
+      tono: document.getElementById("perso_tono").value,
+    };
+    openModal(enganchesModal(btnGenerarConPersonalizacion.dataset.id, btnGenerarConPersonalizacion.dataset.tipo, personalizacion));
+  });
+  const btnRepersonalizar = document.getElementById("btnRepersonalizar");
+  if(btnRepersonalizar) btnRepersonalizar.addEventListener("click", ()=> openModal(personalizacionForm(btnRepersonalizar.dataset.id, btnRepersonalizar.dataset.tipo)));
   document.querySelectorAll("[data-copiar]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       const ta = document.getElementById(btn.dataset.copiar);
@@ -2738,6 +2836,7 @@ function bindModalEvents(){
       const enc = calcularEncaje(data);
       data.puntosEncaje = enc.pts;
       saveLeadBtn.disabled = true;
+      let idNuevoParaEnganche = null;
       if(id){
         const existente = DB.leads.find(l=>l.id===id);
         Object.assign(existente, data);
@@ -2753,17 +2852,26 @@ function bindModalEvents(){
           const guardado = await guardarLeadEnSupabase(nuevo, true);
           if(guardado){
             DB.leads.unshift(guardado);
+            idNuevoParaEnganche = guardado.id;
           }else{
             DB.leads.unshift(nuevo); // respaldo local: no se pierde el trabajo si Supabase falla
+            idNuevoParaEnganche = nuevo.id;
             toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
           }
         }else{
           DB.leads.unshift(nuevo);
+          idNuevoParaEnganche = nuevo.id;
         }
         registrarActividad("Creó prospecto", `${data.nombre} ${data.apellido} — ${data.empresaNombre||'sin empresa'}`);
         toast("Prospecto creado");
       }
-      save(); closeModal(); renderView();
+      save();
+      if(idNuevoParaEnganche){
+        renderView();
+        openModal(personalizacionForm(idNuevoParaEnganche, "lead"));
+      }else{
+        closeModal(); renderView();
+      }
     });
   }
 
