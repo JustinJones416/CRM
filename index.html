@@ -99,10 +99,30 @@ body.dense .grid{gap:8px;}
 .card-pad{padding:16px 18px;}
 body.dense .card-pad{padding:10px 12px;}
 .section-title{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 9px;}
+.subtabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:0;}
+.subtab{background:none;border:none;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;transition:.15s;}
+.subtab:hover{color:var(--text);}
+.subtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.subtab-count{background:var(--paper);color:var(--muted);font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;}
+.subtab.active .subtab-count{background:var(--accent-soft);color:var(--accent);}
+.subtab-panel{animation:fadein .15s ease;}
 body.dense .section-title{margin:14px 0 6px;font-size:11.5px;}
 .section-title:first-child{margin-top:0;}
 
 .kpi{padding:14px 15px;position:relative;overflow:hidden;}
+.guia-inicio{padding:18px 20px;background:linear-gradient(180deg,#fff,var(--paper));border-color:#DCE3F5;}
+.guia-inicio-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.guia-progreso{height:6px;background:var(--paper);border-radius:20px;overflow:hidden;margin-bottom:16px;}
+.guia-progreso-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .3s;}
+.guia-pasos{display:flex;flex-direction:column;gap:2px;}
+.guia-paso{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:10px;transition:.15s;}
+.guia-paso:hover{background:#fff;}
+.guia-check{width:26px;height:26px;min-width:26px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);}
+.guia-paso.ok .guia-check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.guia-texto{flex:1;font-size:13px;}
+.guia-texto b{display:block;margin-bottom:1px;}
+.guia-texto div{color:var(--muted);font-size:12px;}
+.guia-paso.ok .guia-texto b{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line);}
 .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .18s;}
 .kpi.clickable:hover::before{opacity:1;}
 body.dense .kpi{padding:9px 11px;}
@@ -132,9 +152,14 @@ body.dense .kpi .value{font-size:19px;margin:2px 0 4px;}
 .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 body.dense .toolbar{margin-bottom:8px;}
 .toolbar .filters{display:flex;gap:8px;flex-wrap:wrap;}
-input[type=text],input[type=search],input[type=number],input[type=date],input[type=email],input[type=tel],select,textarea{
-  border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{
+  border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;background:var(--paper);color:var(--text);transition:.15s;
 }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px var(--accent-soft);
+}
+input:disabled,select:disabled,textarea:disabled{background:var(--paper);color:var(--muted);cursor:not-allowed;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;}
 textarea{width:100%;resize:vertical;}
 .search-box{position:relative;}
 .add-dropdown-wrap{position:relative;}
@@ -220,15 +245,15 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 }
 .modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:3000;padding:16px;}
 .modal-bg.active{display:flex;}
-.modal{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
-.modal-head h3{margin:0;font-size:16px;}
-.modal-body{padding:18px 20px;}
-.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
-.close-x{background:none;border:none;font-size:18px;color:var(--muted);}
+.modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 70px rgba(15,15,23,.3);}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0;font-size:16.5px;font-family:'Sora';font-weight:700;}
+.modal-body{padding:20px 22px;}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--paper);border-radius:0 0 16px 16px;}
+.close-x{background:none;border:none;font-size:18px;color:var(--muted);border-radius:8px;width:30px;height:30px;transition:.15s;}
+.close-x:hover{background:var(--paper);color:var(--text);}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .form-grid .full{grid-column:1/-1;}
-.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
 .field input,.field select,.field textarea{width:100%;}
 
 /* toast */
@@ -1004,21 +1029,18 @@ const NAV = [
     {id:"alertas", label:"Alertas y tareas", ready:true},
     {id:"equipo", label:"Equipo", ready:true},
   ]},
-  {group:"Prospección", items:[
-    {id:"leads", label:"Prospectos", ready:true},
+  {group:"Negocios", items:[
+    {id:"negocios", label:"Prospectos y clientes", ready:true},
     {id:"mapa", label:"Mapa global", ready:true},
-  ]},
-  {group:"Clientes", items:[
-    {id:"clientes", label:"Clientes", ready:true},
-    {id:"empresas", label:"Empresas y contactos", ready:true},
   ]},
   {group:"Ventas", items:[
     {id:"pipeline", label:"Pipeline", ready:true},
-    {id:"oportunidades", label:"Oportunidades", ready:true},
   ]},
 ];
 
 let currentView = "dashboard";
+let negociosTab = "prospectos"; // "prospectos" | "clientes" | "empresas" — pestañas del módulo unificado
+let pipelineVista = "kanban";   // "kanban" | "tabla" — mismo dato de Oportunidades, dos formas de verlo
 
 let navGruposCerrados = new Set(JSON.parse(localStorage.getItem("nexocrm_navclosed")||"[]"));
 function renderNav(){
@@ -1096,12 +1118,9 @@ function renderView(){
     dashboard: viewDashboard,
     alertas: viewAlertas,
     equipo: viewEquipo,
-    leads: viewLeads,
+    negocios: viewNegocios,
     mapa: viewMapaGlobal,
-    clientes: viewClientes,
-    empresas: viewEmpresas,
-    pipeline: viewPipeline,
-    oportunidades: viewOportunidades,
+    pipeline: viewPipelineUnificado,
   };
   c.innerHTML = (renderers[currentView] || viewDashboard)();
   bindViewEvents();
@@ -1117,6 +1136,45 @@ function viewSoon(label){
 }
 
 /* --------------------------- DASHBOARD --------------------------- */
+/* --------------------------- GUÍA DE INICIO (Dashboard) --------------------------- */
+/* Ningún dato falso — se calcula en vivo contra lo que realmente existe en el sistema.
+   Se puede ocultar manualmente; reaparece solo si el estado real cambia (ej. se borra el equipo). */
+function renderGuiaInicio(){
+  if(localStorage.getItem("nexocrm_guia_oculta")==="1") return "";
+  const pasos = [
+    {ok: DB.vendedores.length>0, titulo:"Agrega a tu equipo", detalle:"Cada closer que use el CRM debe iniciar sesión — se vinculan solos.", vista:"equipo", cta:"Ir a Equipo"},
+    {ok: supabaseConfigured, titulo:"Conecta Supabase", detalle:"Para que todo el equipo vea los mismos prospectos y clientes, no solo tú.", vista:null, cta:null},
+    {ok: DB.leads.length>0, titulo:"Agrega tu primer prospecto", detalle:"Manual, desde Google, o importando un CSV/Excel con varios de una vez.", vista:"leads", cta:"Ir a Prospectos"},
+    {ok: DB.leads.some(l=>l.falencia && l.falencia.trim().length>5), titulo:"Registra la falencia detectada", detalle:"Así el sistema calcula el encaje real y genera mensajes de captación personalizados.", vista:"leads", cta:"Ver prospectos"},
+    {ok: DB.oportunidades.length>0, titulo:"Mueve una oportunidad al Pipeline", detalle:"Desde la ficha del prospecto, o creándola directo en Oportunidades.", vista:"pipeline", cta:"Ir a Pipeline"},
+    {ok: DB.clientes.length>0, titulo:"Registra tu primer cliente", detalle:"Se crea solo al convertir un prospecto, o puedes agregarlo directo.", vista:"clientes", cta:"Ir a Clientes"},
+  ];
+  const completos = pasos.filter(p=>p.ok).length;
+  if(completos===pasos.length) return "";
+  return `
+  <div class="card guia-inicio" style="margin-bottom:18px;">
+    <div class="guia-inicio-head">
+      <div>
+        <b>Guía rápida para empezar</b>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">${completos}/${pasos.length} pasos completados</div>
+      </div>
+      <button class="btn btn-sm" id="btnOcultarGuia">Ocultar</button>
+    </div>
+    <div class="guia-progreso"><div class="guia-progreso-fill" style="width:${Math.round(completos/pasos.length*100)}%"></div></div>
+    <div class="guia-pasos">
+      ${pasos.map((p,i)=>`
+        <div class="guia-paso ${p.ok?'ok':''}">
+          <div class="guia-check">${p.ok?'✓':i+1}</div>
+          <div class="guia-texto">
+            <b>${p.titulo}</b>
+            <div>${p.detalle}</div>
+          </div>
+          ${(!p.ok && p.vista)? `<button class="btn btn-sm" data-goto="${p.vista}">${p.cta}</button>`:""}
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
 function viewDashboard(){
   const leads = DB.leads.filter(l=>l.estado!=="convertido" && l.estado!=="perdido" && l.estado!=="descartado");
   const nuevos = DB.leads.filter(l=> daysAgo(l.fechaIngreso)<=1).length;
@@ -1151,6 +1209,7 @@ function viewDashboard(){
   const tareasVencidas = tareasPendientes.filter(tareaVencida);
 
   return `
+  ${renderGuiaInicio()}
   <div class="section-title">Indicadores clave</div>
   <div class="grid cols-4">
     <div class="card kpi clickable" data-goto="leads">
@@ -1391,6 +1450,41 @@ function tareaForm(tareaId){
 
 /* --------------------------- LEADS --------------------------- */
 let leadFilters = {estado:"", prioridad:"", q:""};
+
+/* --------------------------- NEGOCIOS (unificado: Prospectos / Clientes / Empresas) --------------------------- */
+/* Antes eran 3 items separados del menú que generaban confusión. Siguen siendo listas de datos
+   distintas por debajo (un prospecto y un cliente miden cosas distintas: encaje vs LTV), pero
+   ahora se navegan como un solo lugar, con pestañas — igual que "Accounts" en Glencoco. */
+function viewNegocios(){
+  const totalProspectos = DB.leads.filter(l=>l.estado!=="descartado").length;
+  const totalClientes = DB.clientes.length;
+  const totalEmpresas = DB.empresas.length;
+  const tabs = [
+    {id:"prospectos", label:"Prospectos", count:totalProspectos},
+    {id:"clientes", label:"Clientes", count:totalClientes},
+    {id:"empresas", label:"Empresas", count:totalEmpresas},
+  ];
+  const contenido = negociosTab==="clientes" ? viewClientes() : negociosTab==="empresas" ? viewEmpresas() : viewLeads();
+  return `
+  <div class="subtabs">
+    ${tabs.map(t=>`<button class="subtab ${negociosTab===t.id?'active':''}" data-negocios-tab="${t.id}">${t.label} <span class="subtab-count">${t.count}</span></button>`).join("")}
+  </div>
+  <div class="subtab-panel">${contenido}</div>`;
+}
+
+/* --------------------------- PIPELINE (unificado: tablero Kanban / tabla) --------------------------- */
+/* Mismo dato (Oportunidades) visto de dos formas — sí es útil mantener ambas vistas (tablero para
+   mover etapas de un vistazo, tabla para filtrar/ordenar), pero ahora comparten un solo lugar en
+   el menú con un interruptor, en vez de dos entradas separadas. */
+function viewPipelineUnificado(){
+  return `
+  <div class="subtabs">
+    <button class="subtab ${pipelineVista==='kanban'?'active':''}" data-pipeline-vista="kanban">🗂 Tablero</button>
+    <button class="subtab ${pipelineVista==='tabla'?'active':''}" data-pipeline-vista="tabla">📋 Tabla</button>
+  </div>
+  <div class="subtab-panel">${pipelineVista==='tabla' ? viewOportunidades() : viewPipeline()}</div>`;
+}
+
 
 function viewLeads(){
   const rows = DB.leads.filter(l=>{
@@ -1973,14 +2067,21 @@ function viewClientes(){
     return `${c.nombre} ${c.segmento}`.toLowerCase().includes(clienteFilterQ.toLowerCase());
   });
   const enRiesgoTotal = DB.clientes.filter(c=>c.riesgo!=="bajo").length;
+  const hayClientesReales = DB.clientes.length>0;
   return `
   <div class="toolbar">
     <div class="search-box"><input type="text" id="clienteSearch" placeholder="Buscar cliente..." value="${clienteFilterQ}"></div>
     <div style="display:flex;gap:8px;">
       <button class="btn ${clienteFilterRiesgo?'btn-primary':''}" id="btnFiltroRiesgo">⚠ En riesgo (${enRiesgoTotal})</button>
-      <button class="btn btn-primary" id="btnNuevoCliente">+ Nuevo cliente</button>
+      <button class="btn btn-primary" id="btnNuevoCliente">+ Agregar cliente</button>
     </div>
   </div>
+  ${!hayClientesReales? `
+  <div class="card card-pad" style="margin-bottom:14px;background:var(--accent-soft);border-color:#CBD9F9;">
+    <b>💡 La forma más rápida de tener tu primer cliente</b>
+    <p style="margin:6px 0 12px;color:var(--muted);font-size:13px;">Un cliente normalmente <b>nace de convertir un prospecto</b> que ya cerró — así se traen solos su historial y datos, sin volver a escribirlos. Solo usa "+ Agregar cliente" si ya tenías clientes antes de usar este CRM.</p>
+    <button class="btn btn-primary btn-sm" data-goto="leads">Ir a Prospectos para convertir uno →</button>
+  </div>`:""}
   <div class="card">
     <div class="table-wrap">
     <table>
@@ -1995,7 +2096,7 @@ function viewClientes(){
           <td data-label="Ticket prom." class="mono">${fmtMoney(c.ticketPromedio)}</td>
           <td data-label="Última compra">${fmtDate(c.ultimaCompra)} <span style="color:var(--muted);font-size:11px;">(${daysAgo(c.ultimaCompra)}d)</span></td>
           <td data-label="Riesgo"><span class="badge badge-${c.riesgo==='alto'?'critica':c.riesgo==='medio'?'alta':'calificado'}">${c.riesgo}</span></td>
-        </tr>`).join("") : `<tr><td colspan="7"><div class="empty">${clienteFilterRiesgo? 'Ningún cliente en riesgo ahora mismo. 🎉' : 'Ningún cliente coincide con la búsqueda.'}</div></td></tr>`}
+        </tr>`).join("") : `<tr><td colspan="7"><div class="empty">${clienteFilterRiesgo? 'Ningún cliente en riesgo ahora mismo. 🎉' : (hayClientesReales? 'Ningún cliente coincide con la búsqueda.' : 'Todavía no hay clientes registrados.')}</div></td></tr>`}
       </tbody>
     </table>
     </div>
@@ -2291,22 +2392,54 @@ function oportunidadForm(op){
    Se ejecuta cada vez que se renderiza una vista completa.
 ============================================================================ */
 function bindViewEvents(){
+  /* Traduce los ids de vista antiguos (de cuando Prospectos/Clientes/Empresas y
+     Pipeline/Oportunidades eran módulos separados) a la navegación unificada actual,
+     seleccionando la pestaña correcta. Así ningún botón viejo queda roto. */
+  function irA(destino){
+    const mapa = {
+      leads: ()=>{ negociosTab="prospectos"; goTo("negocios"); },
+      clientes: ()=>{ negociosTab="clientes"; clienteFilterRiesgo=false; clienteFilterQ=""; goTo("negocios"); },
+      empresas: ()=>{ negociosTab="empresas"; goTo("negocios"); },
+      negocios: ()=> goTo("negocios"),
+      oportunidades: ()=>{ pipelineVista="tabla"; goTo("pipeline"); },
+      pipeline: ()=>{ pipelineVista="kanban"; goTo("pipeline"); },
+    };
+    (mapa[destino] || (()=>goTo(destino)))();
+  }
+
   document.querySelectorAll("[data-goto]").forEach(el=>{
-    el.addEventListener("click", ()=>{
-      if(el.dataset.goto==="clientes"){ clienteFilterRiesgo = false; clienteFilterQ = ""; }
-      goTo(el.dataset.goto);
-    });
+    el.addEventListener("click", ()=> irA(el.dataset.goto));
   });
   document.querySelectorAll('[data-action="goto-riesgo"]').forEach(el=>{
     el.addEventListener("click", ()=>{
       clienteFilterRiesgo = true;
-      goTo("clientes");
+      negociosTab = "clientes";
+      goTo("negocios");
+    });
+  });
+  document.querySelectorAll("[data-negocios-tab]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      negociosTab = btn.dataset.negociosTab;
+      if(negociosTab==="clientes"){ /* conserva el filtro de riesgo si venía de la alerta */ }
+      else{ clienteFilterRiesgo = false; }
+      renderView();
+    });
+  });
+  document.querySelectorAll("[data-pipeline-vista]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      pipelineVista = btn.dataset.pipelineVista;
+      renderView();
     });
   });
 
   // Tareas / actividades clicables (Dashboard y Alertas y tareas)
   document.querySelectorAll("[data-tarea]").forEach(row=>{
     row.addEventListener("click", ()=> openModal(tareaForm(row.dataset.tarea)));
+  });
+  const btnOcultarGuia = document.getElementById("btnOcultarGuia");
+  if(btnOcultarGuia) btnOcultarGuia.addEventListener("click", ()=>{
+    try{ localStorage.setItem("nexocrm_guia_oculta","1"); }catch(e){}
+    renderView();
   });
   const btnNuevaTareaDash = document.getElementById("btnNuevaTareaDash");
   if(btnNuevaTareaDash) btnNuevaTareaDash.addEventListener("click", ()=> openModal(tareaForm()));
