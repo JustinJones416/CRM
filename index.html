@@ -900,6 +900,148 @@ async function cargarLeadsDesdeSupabase(){
     toast("No se pudo sincronizar prospectos con Supabase — revisa SUPABASE_SETUP.md", true);
   }
 }
+
+/* ============================================================================
+   CLIENTES — misma lógica de sincronización que Prospectos.
+============================================================================ */
+function clienteDesdeFila(r){
+  return {
+    id: r.id, nombre: r.nombre, empresaId: r.empresa_id||null, contactoId: r.contacto_id||null,
+    segmento: r.segmento||"Nuevo", vendedorId: r.vendedor_id||"", riesgo: r.riesgo||"bajo",
+    ultimaCompra: r.ultima_compra, valorTotal: Number(r.valor_total)||0,
+    ticketPromedio: Number(r.ticket_promedio)||0, compras: r.compras||0,
+    fechaConversion: r.fecha_conversion, notasSeguimiento: r.notas_seguimiento||[],
+  };
+}
+function clienteAFila(c){
+  return {
+    nombre: c.nombre, empresa_id: c.empresaId||null, contacto_id: c.contactoId||null,
+    segmento: c.segmento||"Nuevo", vendedor_id: c.vendedorId||null, riesgo: c.riesgo||"bajo",
+    ultima_compra: c.ultimaCompra||todayISO(), valor_total: c.valorTotal||0,
+    ticket_promedio: c.ticketPromedio||0, compras: c.compras||0,
+    fecha_conversion: c.fechaConversion||todayISO(), notas_seguimiento: c.notasSeguimiento||[],
+  };
+}
+async function cargarClientesDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("clientes").select("*").order("fecha_conversion", {ascending:false});
+    if(error) throw error;
+    DB.clientes = (data||[]).map(clienteDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar clientes desde Supabase:", err.message);
+    toast("No se pudo sincronizar clientes con Supabase — revisa SUPABASE_SETUP.md", true);
+  }
+}
+async function guardarClienteEnSupabase(cliente, esNuevo){
+  const data = await guardarConReintento("clientes", clienteAFila(cliente), esNuevo, cliente.id, "el cliente");
+  return data ? clienteDesdeFila(data) : null;
+}
+
+/* ============================================================================
+   EMPRESAS Y CONTACTOS
+============================================================================ */
+function empresaDesdeFila(r){
+  return {id: r.id, nombre: r.nombre, industria: r.industria||"", ciudad: r.ciudad||"", pais: r.pais||""};
+}
+function empresaAFila(e){
+  return {nombre: e.nombre, industria: e.industria||"", ciudad: e.ciudad||"", pais: e.pais||""};
+}
+async function cargarEmpresasDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("empresas").select("*").order("nombre", {ascending:true});
+    if(error) throw error;
+    DB.empresas = (data||[]).map(empresaDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar empresas desde Supabase:", err.message);
+  }
+}
+async function guardarEmpresaEnSupabase(empresa, esNuevo){
+  const data = await guardarConReintento("empresas", empresaAFila(empresa), esNuevo, empresa.id, "la empresa");
+  return data ? empresaDesdeFila(data) : null;
+}
+
+function contactoDesdeFila(r){
+  return {id: r.id, empresaId: r.empresa_id, nombre: r.nombre, apellido: r.apellido||"", cargo: r.cargo||"", email: r.email||"", telefono: r.telefono||"", principal: !!r.principal};
+}
+function contactoAFila(c){
+  return {empresa_id: c.empresaId, nombre: c.nombre, apellido: c.apellido||"", cargo: c.cargo||"", email: c.email||"", telefono: c.telefono||"", principal: !!c.principal};
+}
+async function cargarContactosDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("contactos").select("*");
+    if(error) throw error;
+    DB.contactos = (data||[]).map(contactoDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar contactos desde Supabase:", err.message);
+  }
+}
+async function guardarContactoEnSupabase(contacto, esNuevo){
+  const data = await guardarConReintento("contactos", contactoAFila(contacto), esNuevo, contacto.id, "el contacto");
+  return data ? contactoDesdeFila(data) : null;
+}
+
+/* ============================================================================
+   OPORTUNIDADES
+============================================================================ */
+function oportunidadDesdeFila(r){
+  return {
+    id: r.id, nombre: r.nombre, empresaId: r.empresa_id||null, clienteId: r.cliente_id||null,
+    vendedorId: r.vendedor_id||"", valor: Number(r.valor)||0, etapa: r.etapa||"nuevo",
+    probabilidad: r.probabilidad||0, estadoAgenteIA: r.estado_agente_ia||"No implementado",
+    diasEtapaDesde: r.dias_etapa_desde, fechaCierre: r.fecha_cierre, ultimaActividad: r.ultima_actividad,
+  };
+}
+function oportunidadAFila(o){
+  return {
+    nombre: o.nombre, empresa_id: o.empresaId||null, cliente_id: o.clienteId||null,
+    vendedor_id: o.vendedorId||null, valor: o.valor||0, etapa: o.etapa||"nuevo",
+    probabilidad: o.probabilidad||0, estado_agente_ia: o.estadoAgenteIA||"No implementado",
+    dias_etapa_desde: o.diasEtapaDesde||todayISO(),
+  };
+}
+async function cargarOportunidadesDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("oportunidades").select("*");
+    if(error) throw error;
+    DB.oportunidades = (data||[]).map(oportunidadDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar oportunidades desde Supabase:", err.message);
+    toast("No se pudo sincronizar oportunidades con Supabase — revisa SUPABASE_SETUP.md", true);
+  }
+}
+async function guardarOportunidadEnSupabase(op, esNuevo){
+  const data = await guardarConReintento("oportunidades", oportunidadAFila(op), esNuevo, op.id, "la oportunidad");
+  return data ? oportunidadDesdeFila(data) : null;
+}
+
+/* ============================================================================
+   TAREAS (actividades)
+============================================================================ */
+function tareaDesdeFila(r){
+  return {id: r.id, tipo: r.tipo||"tarea", titulo: r.titulo, fecha: r.fecha, estado: r.estado||"pendiente", vendedorId: r.vendedor_id||"", leadId: r.lead_id||null};
+}
+function tareaAFila(t){
+  return {tipo: t.tipo||"tarea", titulo: t.titulo, fecha: t.fecha, estado: t.estado||"pendiente", vendedor_id: t.vendedorId||null, lead_id: t.leadId||null};
+}
+async function cargarTareasDesdeSupabase(){
+  if(!supabaseConfigured) return;
+  try{
+    const {data, error} = await sb.from("actividades").select("*").order("fecha", {ascending:true});
+    if(error) throw error;
+    DB.actividades = (data||[]).map(tareaDesdeFila);
+  }catch(err){
+    console.warn("No se pudo cargar tareas desde Supabase:", err.message);
+  }
+}
+async function guardarTareaEnSupabase(tarea, esNuevo){
+  const data = await guardarConReintento("actividades", tareaAFila(tarea), esNuevo, tarea.id, "la tarea");
+  return data ? tareaDesdeFila(data) : null;
+}
+
 /* Guarda un prospecto (nuevo o existente) en Supabase y devuelve el objeto ya con su id real.
    Si Supabase no está configurado o falla, devuelve null y quien llama debe usar el respaldo local. */
 /* El caché de esquema de Supabase (PostgREST) a veces tarda en "enterarse" de columnas que
@@ -911,48 +1053,58 @@ function extraerColumnaFaltante(mensajeError){
   return m ? m[1] : null;
 }
 
-async function guardarLeadEnSupabase(lead, esNuevo){
+/* Función genérica de guardado resistente — la usan todas las entidades (prospectos, clientes,
+   empresas, contactos, oportunidades, tareas) para no repetir la misma lógica de reintento seis
+   veces. Recibe el nombre de la tabla, la fila ya convertida a snake_case, si es nuevo registro
+   y su id si es edición. Devuelve la fila guardada (con su id real) o null si falló del todo. */
+async function guardarConReintento(tabla, filaOriginal, esNuevo, id, etiqueta){
   if(!supabaseConfigured) return null;
-  let fila = leadAFila(lead);
+  let fila = {...filaOriginal};
   for(let intento=0; intento<6; intento++){
     try{
       const query = esNuevo
-        ? sb.from("leads").insert(fila).select().single()
-        : sb.from("leads").update(fila).eq("id", lead.id).select().single();
+        ? sb.from(tabla).insert(fila).select().single()
+        : sb.from(tabla).update(fila).eq("id", id).select().single();
       const {data, error} = await query;
       if(error) throw error;
-      return leadDesdeFila(data);
+      return data;
     }catch(err){
       const columnaFaltante = extraerColumnaFaltante(err.message);
       if(columnaFaltante && columnaFaltante in fila){
-        // Reintenta sin esa columna — probablemente el caché de esquema de Supabase está
-        // desactualizado. Ese dato queda sin sincronizar esta vez, pero el resto sí se guarda.
         delete fila[columnaFaltante];
         continue;
       }
-      toast(err.message || "No se pudo guardar el prospecto en Supabase", true);
+      toast(err.message || `No se pudo guardar ${etiqueta||'el registro'} en Supabase`, true);
       return null;
     }
   }
-  toast("Se guardó en Supabase, pero varias columnas no están sincronizadas todavía — corre 'notify pgrst, reload schema;' en el SQL Editor", true);
+  toast(`Se guardó ${etiqueta||'el registro'}, pero varias columnas no están sincronizadas — corre 'notify pgrst, reload schema;' en el SQL Editor`, true);
   try{
     const query = esNuevo
-      ? sb.from("leads").insert(fila).select().single()
-      : sb.from("leads").update(fila).eq("id", lead.id).select().single();
+      ? sb.from(tabla).insert(fila).select().single()
+      : sb.from(tabla).update(fila).eq("id", id).select().single();
     const {data} = await query;
-    return data ? leadDesdeFila(data) : null;
+    return data || null;
   }catch(e){ return null; }
 }
-async function eliminarLeadEnSupabase(id){
+async function eliminarConReintento(tabla, id, etiqueta){
   if(!supabaseConfigured) return true;
   try{
-    const {error} = await sb.from("leads").delete().eq("id", id);
+    const {error} = await sb.from(tabla).delete().eq("id", id);
     if(error) throw error;
     return true;
   }catch(err){
-    toast(err.message || "No se pudo eliminar el prospecto en Supabase", true);
+    toast(err.message || `No se pudo eliminar ${etiqueta||'el registro'} en Supabase`, true);
     return false;
   }
+}
+
+async function guardarLeadEnSupabase(lead, esNuevo){
+  const data = await guardarConReintento("leads", leadAFila(lead), esNuevo, lead.id, "el prospecto");
+  return data ? leadDesdeFila(data) : null;
+}
+async function eliminarLeadEnSupabase(id){
+  return eliminarConReintento("leads", id, "el prospecto");
 }
 
 async function ensureVendedorForUser(email){
@@ -1002,12 +1154,18 @@ async function convertirLeadACliente(leadId){
   if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
   const empresaId = l.empresaId || upsertEmpresaDesdeNombre(l.empresaNombre, l.pais);
   upsertContactoDesdeLead(l, empresaId);
-  DB.clientes.push({
+  const nuevoCliente = {
     id:uid(), nombre: l.empresaNombre || `${l.nombre} ${l.apellido}`, empresaId, contactoId:null,
     segmento:"Nuevo", vendedorId:l.vendedorId, riesgo:"bajo",
     ultimaCompra: todayISO(), valorTotal:0, ticketPromedio:0, compras:0, fechaConversion: todayISO(),
     notasSeguimiento: [{fecha: todayISO(), texto: `Convertido desde prospecto (${l.pais? paisInfo(l.pais)?.flag+' '+l.pais : 'sin país'})`, vendedorId: l.vendedorId}],
-  });
+  };
+  if(supabaseConfigured){
+    const guardado = await guardarClienteEnSupabase(nuevoCliente, true);
+    DB.clientes.push(guardado || nuevoCliente);
+  }else{
+    DB.clientes.push(nuevoCliente);
+  }
   save();
   registrarActividad("Convirtió prospecto a cliente", `${l.nombre} ${l.apellido} — ${l.empresaNombre||'sin empresa'}`);
   toast(`${l.nombre} ${l.apellido} convertido a cliente`);
@@ -2291,7 +2449,7 @@ function bindKanban(){
   root.querySelectorAll(".kcol").forEach(col=>{
     col.addEventListener("dragover", e=>{ e.preventDefault(); col.classList.add("dragover"); });
     col.addEventListener("dragleave", ()=> col.classList.remove("dragover"));
-    col.addEventListener("drop", e=>{
+    col.addEventListener("drop", async e=>{
       e.preventDefault();
       col.classList.remove("dragover");
       const nuevaEtapa = col.dataset.etapa;
@@ -2301,6 +2459,7 @@ function bindKanban(){
         op.etapa = nuevaEtapa;
         op.diasEtapaDesde = todayISO();
         op.probabilidad = nuevaEtapa==="ganado"?100: nuevaEtapa==="perdido"?0: op.probabilidad;
+        if(supabaseConfigured) await guardarOportunidadEnSupabase(op, false);
         save();
         toast(`Oportunidad movida a "${ETAPA_LABEL[nuevaEtapa]}"`);
         renderView();
@@ -2650,7 +2809,7 @@ function bindModalEvents(){
   // Guardar tarea (nueva o edición), completar, eliminar
   const saveTareaBtn = document.getElementById("saveTarea");
   if(saveTareaBtn){
-    saveTareaBtn.addEventListener("click", ()=>{
+    saveTareaBtn.addEventListener("click", async ()=>{
       const titulo = document.getElementById("ta_titulo").value.trim();
       const fechaVal = document.getElementById("ta_fecha").value;
       if(!titulo){ toast("Escribe una descripción para la tarea", true); return; }
@@ -2663,12 +2822,25 @@ function bindModalEvents(){
         estado: document.getElementById("ta_estado").value,
         vendedorId: document.getElementById("ta_vendedor").value,
       };
+      saveTareaBtn.disabled = true;
       if(id){
-        Object.assign(DB.actividades.find(a=>a.id===id), data);
+        const existente = DB.actividades.find(a=>a.id===id);
+        Object.assign(existente, data);
+        if(supabaseConfigured){
+          const guardado = await guardarTareaEnSupabase(existente, false);
+          if(!guardado) toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+        }
         registrarActividad("Editó tarea", data.titulo);
         toast("Tarea actualizada");
       }else{
-        DB.actividades.unshift({...data, id:uid()});
+        const nueva = {...data, id:uid()};
+        if(supabaseConfigured){
+          const guardada = await guardarTareaEnSupabase(nueva, true);
+          if(guardada) DB.actividades.unshift(guardada);
+          else{ DB.actividades.unshift(nueva); toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true); }
+        }else{
+          DB.actividades.unshift(nueva);
+        }
         registrarActividad("Creó tarea", data.titulo);
         toast("Tarea creada");
       }
@@ -2676,16 +2848,18 @@ function bindModalEvents(){
     });
   }
   const btnCompletarTarea = document.getElementById("btnCompletarTarea");
-  if(btnCompletarTarea) btnCompletarTarea.addEventListener("click", ()=>{
+  if(btnCompletarTarea) btnCompletarTarea.addEventListener("click", async ()=>{
     const a = DB.actividades.find(x=>x.id===btnCompletarTarea.dataset.id);
     if(!a) return;
     a.estado = "completada";
+    if(supabaseConfigured) await guardarTareaEnSupabase(a, false);
     save();
     registrarActividad("Completó tarea", a.titulo);
     toast("Tarea marcada como completada"); closeModal(); renderView();
   });
   const btnEliminarTarea = document.getElementById("btnEliminarTarea");
-  if(btnEliminarTarea) btnEliminarTarea.addEventListener("click", ()=>{
+  if(btnEliminarTarea) btnEliminarTarea.addEventListener("click", async ()=>{
+    if(supabaseConfigured) await eliminarConReintento("actividades", btnEliminarTarea.dataset.id, "la tarea");
     DB.actividades = DB.actividades.filter(x=>x.id!==btnEliminarTarea.dataset.id);
     save(); toast("Tarea eliminada"); closeModal(); renderView();
   });
@@ -2693,7 +2867,7 @@ function bindModalEvents(){
   // Guardar cliente (nuevo o edición)
   const saveClienteBtn = document.getElementById("saveCliente");
   if(saveClienteBtn){
-    saveClienteBtn.addEventListener("click", ()=>{
+    saveClienteBtn.addEventListener("click", async ()=>{
       const nombre = document.getElementById("cl_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = saveClienteBtn.dataset.id;
@@ -2707,15 +2881,33 @@ function bindModalEvents(){
         ticketPromedio: Number(document.getElementById("cl_ticket").value)||0,
         compras: Number(document.getElementById("cl_compras").value)||0,
       };
+      saveClienteBtn.disabled = true;
       let idNuevoClienteParaEnganche = null;
       if(id){
-        Object.assign(DB.clientes.find(c=>c.id===id), data);
+        const existente = DB.clientes.find(c=>c.id===id);
+        Object.assign(existente, data);
+        if(supabaseConfigured){
+          const guardado = await guardarClienteEnSupabase(existente, false);
+          if(!guardado) toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+        }
         registrarActividad("Editó cliente", data.nombre);
         toast("Cliente actualizado");
       }else{
-        const nuevoId = uid();
-        DB.clientes.push({...data, id:nuevoId, ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]});
-        idNuevoClienteParaEnganche = nuevoId;
+        const nuevo = {...data, id:uid(), ultimaCompra: todayISO(), fechaConversion: todayISO(), notasSeguimiento:[]};
+        if(supabaseConfigured){
+          const guardado = await guardarClienteEnSupabase(nuevo, true);
+          if(guardado){
+            DB.clientes.push(guardado);
+            idNuevoClienteParaEnganche = guardado.id;
+          }else{
+            DB.clientes.push(nuevo);
+            idNuevoClienteParaEnganche = nuevo.id;
+            toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+          }
+        }else{
+          DB.clientes.push(nuevo);
+          idNuevoClienteParaEnganche = nuevo.id;
+        }
         registrarActividad("Creó cliente", data.nombre);
         toast("Cliente creado");
       }
@@ -2748,13 +2940,14 @@ function bindModalEvents(){
     if(btnAgregarNota) btnAgregarNota.style.display = "inline-block";
   });
   const btnGuardarNota = document.getElementById("btnGuardarNota");
-  if(btnGuardarNota) btnGuardarNota.addEventListener("click", ()=>{
+  if(btnGuardarNota) btnGuardarNota.addEventListener("click", async ()=>{
     const texto = document.getElementById("cl_notatxt").value.trim();
     if(!texto){ toast("Escribe una nota antes de guardar", true); return; }
     const c = DB.clientes.find(x=>x.id===btnGuardarNota.dataset.id);
     if(!c) return;
     if(!c.notasSeguimiento) c.notasSeguimiento = [];
     c.notasSeguimiento.push({fecha: todayISO(), texto, vendedorId: c.vendedorId});
+    if(supabaseConfigured) await guardarClienteEnSupabase(c, false);
     save();
     registrarActividad("Agregó nota de seguimiento", `${c.nombre} — ${texto.slice(0,60)}`);
     toast("Nota de seguimiento guardada");
@@ -2863,10 +3056,16 @@ function bindModalEvents(){
       const motivo = document.getElementById("ag_motivo").value.trim() || `Reunión con ${l.nombre} ${l.apellido}`;
       if(!fecha || !hora){ toast("Selecciona fecha y hora", true); return; }
       const fechaISO = new Date(`${fecha}T${hora}:00`).toISOString();
-      DB.actividades.push({
+      const nuevaTarea = {
         id: uid(), tipo: "reunion", titulo: motivo, fecha: fechaISO,
         estado: "pendiente", vendedorId, leadId: l.id,
-      });
+      };
+      if(supabaseConfigured){
+        const guardada = await guardarTareaEnSupabase(nuevaTarea, true);
+        DB.actividades.push(guardada || nuevaTarea);
+      }else{
+        DB.actividades.push(nuevaTarea);
+      }
       l.estado = l.estado==="nuevo" ? "contactado" : l.estado;
       if(supabaseConfigured) await guardarLeadEnSupabase(l, false);
       save();
@@ -3127,7 +3326,7 @@ function bindModalEvents(){
   // Guardar empresa
   const neSave = document.getElementById("ne_save");
   if(neSave){
-    neSave.addEventListener("click", ()=>{
+    neSave.addEventListener("click", async ()=>{
       const nombre = document.getElementById("ne_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = neSave.dataset.id;
@@ -3137,12 +3336,25 @@ function bindModalEvents(){
         ciudad: document.getElementById("ne_ciudad").value,
         pais: document.getElementById("ne_pais").value,
       };
+      neSave.disabled = true;
       if(id){
-        Object.assign(DB.empresas.find(e=>e.id===id), data);
+        const existente = DB.empresas.find(e=>e.id===id);
+        Object.assign(existente, data);
+        if(supabaseConfigured){
+          const guardado = await guardarEmpresaEnSupabase(existente, false);
+          if(!guardado) toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+        }
         registrarActividad("Editó empresa", data.nombre);
         toast("Empresa actualizada");
       }else{
-        DB.empresas.push({...data, id:uid()});
+        const nueva = {...data, id:uid()};
+        if(supabaseConfigured){
+          const guardado = await guardarEmpresaEnSupabase(nueva, true);
+          if(guardado) DB.empresas.push(guardado);
+          else{ DB.empresas.push(nueva); toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true); }
+        }else{
+          DB.empresas.push(nueva);
+        }
         registrarActividad("Creó empresa", data.nombre);
         toast("Empresa creada");
       }
@@ -3169,7 +3381,7 @@ function bindModalEvents(){
     if(btnAgregarContacto) btnAgregarContacto.style.display = "inline-block";
   });
   const btnGuardarContacto = document.getElementById("btnGuardarContacto");
-  if(btnGuardarContacto) btnGuardarContacto.addEventListener("click", ()=>{
+  if(btnGuardarContacto) btnGuardarContacto.addEventListener("click", async ()=>{
     const nombre = document.getElementById("ct_nombre").value.trim();
     if(!nombre){ toast("El nombre del contacto es obligatorio", true); return; }
     const empresaId = btnGuardarContacto.dataset.empresa;
@@ -3181,7 +3393,14 @@ function bindModalEvents(){
       telefono: document.getElementById("ct_telefono").value,
       principal: document.getElementById("ct_principal").checked,
     };
-    DB.contactos.push(nuevo);
+    btnGuardarContacto.disabled = true;
+    if(supabaseConfigured){
+      const guardado = await guardarContactoEnSupabase(nuevo, true);
+      if(guardado) DB.contactos.push(guardado);
+      else{ DB.contactos.push(nuevo); toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true); }
+    }else{
+      DB.contactos.push(nuevo);
+    }
     save();
     const e = DB.empresas.find(x=>x.id===empresaId);
     registrarActividad("Agregó contacto", `${nombre} ${nuevo.apellido} — ${e?.nombre||''}`);
@@ -3213,19 +3432,26 @@ function bindModalEvents(){
   // Guardar oportunidad (nueva o edición)
   const saveOpBtn = document.getElementById("saveOp");
   if(saveOpBtn){
-    saveOpBtn.addEventListener("click", ()=>{
+    saveOpBtn.addEventListener("click", async ()=>{
       const nombre = document.getElementById("op_nombre").value.trim();
       if(!nombre){ toast("El nombre de la oportunidad es obligatorio", true); return; }
       const id = saveOpBtn.dataset.id;
+      saveOpBtn.disabled = true;
 
       // Si eligió "+ Crear nueva empresa...", la crea primero y usa su id
       let empresaId = document.getElementById("op_empresa").value || null;
       if(empresaId === "__nueva__"){
         const nombreNueva = document.getElementById("op_empresa_nueva").value.trim();
-        if(!nombreNueva){ toast("Escribe el nombre de la nueva empresa", true); return; }
+        if(!nombreNueva){ toast("Escribe el nombre de la nueva empresa", true); saveOpBtn.disabled=false; return; }
         const nueva = {id: uid(), nombre: nombreNueva, industria:"", ciudad:"", pais:"España"};
-        DB.empresas.push(nueva);
-        empresaId = nueva.id;
+        if(supabaseConfigured){
+          const guardada = await guardarEmpresaEnSupabase(nueva, true);
+          DB.empresas.push(guardada || nueva);
+          empresaId = (guardada || nueva).id;
+        }else{
+          DB.empresas.push(nueva);
+          empresaId = nueva.id;
+        }
       }
 
       const data = {
@@ -3240,10 +3466,21 @@ function bindModalEvents(){
       if(id){
         const op = DB.oportunidades.find(o=>o.id===id);
         Object.assign(op, data);
+        if(supabaseConfigured){
+          const guardado = await guardarOportunidadEnSupabase(op, false);
+          if(!guardado) toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true);
+        }
         registrarActividad("Editó oportunidad", data.nombre);
         toast("Oportunidad actualizada");
       }else{
-        DB.oportunidades.push({...data, id:uid(), diasEtapaDesde: todayISO()});
+        const nueva = {...data, id:uid(), diasEtapaDesde: todayISO()};
+        if(supabaseConfigured){
+          const guardada = await guardarOportunidadEnSupabase(nueva, true);
+          if(guardada) DB.oportunidades.push(guardada);
+          else{ DB.oportunidades.push(nueva); toast("Guardado solo en este navegador — no se pudo sincronizar con Supabase", true); }
+        }else{
+          DB.oportunidades.push(nueva);
+        }
         registrarActividad(data.etapa==="ganado" ? "Cerró venta" : "Creó oportunidad", data.nombre);
         toast(data.etapa==="ganado" ? "Venta registrada 🎉" : "Oportunidad creada");
       }
@@ -3386,6 +3623,15 @@ async function showApp(userEmail){
   if(pill) pill.textContent = userEmail || "Modo local";
   if(supabaseConfigured) await cargarEquipoDesdeSupabase(); // trae el equipo real y compartido, visible para todos
   if(supabaseConfigured) await cargarLeadsDesdeSupabase(); // trae los prospectos reales y compartidos
+  if(supabaseConfigured){
+    await Promise.all([
+      cargarClientesDesdeSupabase(),
+      cargarEmpresasDesdeSupabase(),
+      cargarContactosDesdeSupabase(),
+      cargarOportunidadesDesdeSupabase(),
+      cargarTareasDesdeSupabase(),
+    ]);
+  }
   if(userEmail) await ensureVendedorForUser(userEmail); // vincula/crea el integrante del Equipo correspondiente a esta cuenta
   startApp();
 }
