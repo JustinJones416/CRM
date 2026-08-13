@@ -18,6 +18,7 @@
   --text:#1B2340;
   --muted:#6B7080;
   --accent:#0F8B7F;
+  --accent2:#14B8A6;
   --accent-soft:#E4F5F2;
   --info:#4C5FD5;
   --info-soft:#EBEDFB;
@@ -25,8 +26,9 @@
   --amber-soft:#FCF1DD;
   --red:#C6432A;
   --red-soft:#FBE8E3;
-  --radius:10px;
-  --shadow:0 1px 2px rgba(18,24,43,.04), 0 4px 16px rgba(18,24,43,.05);
+  --radius:12px;
+  --shadow:0 1px 2px rgba(18,24,43,.04), 0 8px 24px rgba(18,24,43,.06);
+  --shadow-hover:0 4px 10px rgba(18,24,43,.06), 0 14px 32px rgba(18,24,43,.09);
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--text);font-size:14px;}
@@ -38,7 +40,7 @@ a{color:inherit;}
 /* ---------- SHELL ---------- */
 .shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh;transition:grid-template-columns .18s;}
 .shell.collapsed{grid-template-columns:64px 1fr;}
-.sidebar{background:var(--ink);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:padding .18s;}
+.sidebar{background:linear-gradient(180deg,var(--ink),#0D1220);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:padding .18s;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
 .brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#0B6259);display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
 .brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
@@ -92,14 +94,16 @@ body.dense .grid{gap:8px;}
 .cols-4{grid-template-columns:repeat(4,1fr);}
 .cols-3{grid-template-columns:repeat(3,1fr);}
 .cols-2{grid-template-columns:repeat(2,1fr);}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .18s, transform .18s;}
 .card-pad{padding:16px 18px;}
 body.dense .card-pad{padding:10px 12px;}
 .section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:26px 0 10px;}
 body.dense .section-title{margin:14px 0 6px;font-size:11.5px;}
 .section-title:first-child{margin-top:0;}
 
-.kpi{padding:15px 16px;}
+.kpi{padding:16px 17px;position:relative;overflow:hidden;}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity .18s;}
+.kpi.clickable:hover::before{opacity:1;}
 body.dense .kpi{padding:9px 11px;}
 .kpi .label{font-size:12px;color:var(--muted);font-weight:500;}
 .kpi .value{font-family:'Sora';font-size:26px;font-weight:700;margin:4px 0 6px;}
@@ -109,16 +113,18 @@ body.dense .kpi .value{font-size:19px;margin:2px 0 4px;}
 .kpi .insight.risk{background:var(--red-soft);color:var(--red);}
 .kpi .insight.good{background:var(--accent-soft);color:var(--accent);}
 .kpi .insight.info{background:var(--info-soft);color:var(--info);}
-.kpi.clickable{cursor:pointer;transition:.15s;}
-.kpi.clickable:hover{border-color:var(--accent);transform:translateY(-1px);}
+.kpi.clickable{cursor:pointer;transition:.18s;}
+.kpi.clickable:hover{border-color:#CFE4E1;transform:translateY(-2px);box-shadow:var(--shadow-hover);}
 .clickable{cursor:pointer;transition:.15s;}
 .alert-row.clickable:hover{background:var(--paper);border-radius:8px;}
 
-.btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px;}
-.btn:hover{border-color:#c7cade;}
-.btn-primary{background:var(--ink2);color:#fff;border-color:var(--ink2);}
-.btn-primary:hover{background:#0E1530;}
-.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:.15s;}
+.btn:hover{border-color:#c7cade;transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:linear-gradient(135deg,var(--ink2),#232C52);color:#fff;border-color:var(--ink2);}
+.btn-primary:hover{background:linear-gradient(135deg,#232C52,var(--ink2));box-shadow:0 4px 14px rgba(27,35,64,.25);}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:var(--accent);}
+.btn-accent:hover{box-shadow:0 4px 14px rgba(15,139,127,.25);}
 .btn-sm{padding:5px 10px;font-size:12px;}
 .btn-ghost{background:none;border:none;color:var(--info);font-weight:600;}
 
@@ -470,6 +476,99 @@ function calcularEncaje(lead){
   if(lead.pais){ pts+=10; razones.push("Ubicación geográfica registrada"); }
   return {pts, razones};
 }
+
+/* ---------------------------- CATÁLOGO DE SERVICIOS Y COMISIONES ---------------------------- */
+const SERVICIOS = [
+  {
+    id:"whatsapp_ia",
+    nombre:"Automatizaciones con IA",
+    resumen:"Agentes de WhatsApp inteligentes",
+    descripcion:"Agentes de WhatsApp inteligentes que atienden a tus clientes 24/7, gestionan reservas, responden FAQs y derivan a tu equipo cuando es necesario. Integración con tus sistemas actuales.",
+    precioMin:400, precioMax:500, icono:"🤖",
+    enganches:{
+      Restaurante:"pierden reservas y pedidos fuera de horario de atención porque nadie contesta el WhatsApp de noche o en horas pico",
+      Hotel:"pierden reservas por no responder a tiempo consultas de disponibilidad, sobre todo de huéspedes en otro huso horario",
+      Clínica:"tienen pacientes que no confirman citas y llamadas sin contestar que terminan en cancelaciones de último momento",
+      Otro:"pierden oportunidades de venta por no poder atender WhatsApp las 24 horas",
+    },
+  },
+  {
+    id:"web",
+    nombre:"Páginas web",
+    resumen:"Sitios que convierten visitantes en clientes",
+    descripcion:"Páginas web diseñadas para convertir visitantes en clientes. Rápidas, optimizadas para móvil y con formulario de contacto integrado. Perfectas para pequeños negocios que quieren presencia digital.",
+    precioMin:400, precioMax:500, icono:"🌐",
+    enganches:{
+      Restaurante:"no tienen una página donde la gente pueda ver el menú y reservar directamente, y dependen solo de redes sociales",
+      Hotel:"no tienen una web propia rápida y optimizada para que los huéspedes reserven sin pasar por comisiones de terceros",
+      Clínica:"no tienen presencia digital profesional donde los pacientes puedan conocer sus servicios y agendar",
+      Otro:"no tienen presencia digital propia optimizada para convertir visitas en clientes",
+    },
+  },
+  {
+    id:"marketing_ia",
+    nombre:"Marketing & Publicidad con IA",
+    resumen:"Contenido y campañas con IA",
+    descripcion:"Creación de contenido con clones de IA, gestión de redes sociales y campañas de publicidad en Meta Business. Aumenta tu visibilidad y atrae clientes de forma constante.",
+    precioMin:400, precioMax:500, icono:"📣",
+    enganches:{
+      Restaurante:"su flujo de clientes nuevos depende del boca a boca y no tienen publicidad constante atrayendo gente nueva",
+      Hotel:"la ocupación varía mucho por temporada porque no hay campañas activas constantes atrayendo reservas",
+      Clínica:"dependen de referidos y no tienen un flujo constante de pacientes nuevos por publicidad digital",
+      Otro:"no tienen un flujo constante y predecible de clientes nuevos por publicidad digital",
+    },
+  },
+];
+const PAQUETE_COMPLETO = {precioMin:1200, precioMax:1500, nombre:"Setup completo (3 servicios)"};
+const SOPORTE_MENSUAL_COMPLETO = 297;
+const SOPORTE_MENSUAL_UNO = 99;
+const COMISION_VENTA_PCT = 20;   // % sobre el setup inicial
+const COMISION_MENSUAL_PCT = 10; // % sobre la cuota mensual recurrente
+
+function servicioPorId(id){ return SERVICIOS.find(s=>s.id===id); }
+
+/* Calcula precio de setup, cuota mensual y comisión estimada según los servicios elegidos.
+   Si eligen los 3, aplica el precio de paquete completo en vez de sumar cada uno por separado. */
+function calcularPrecioOportunidad(serviciosIds){
+  const n = (serviciosIds||[]).length;
+  let setupMin, setupMax, mensual;
+  if(n>=3){
+    setupMin = PAQUETE_COMPLETO.precioMin; setupMax = PAQUETE_COMPLETO.precioMax; mensual = SOPORTE_MENSUAL_COMPLETO;
+  }else if(n===1){
+    setupMin = SERVICIOS.find(s=>s.id===serviciosIds[0])?.precioMin||0;
+    setupMax = SERVICIOS.find(s=>s.id===serviciosIds[0])?.precioMax||0;
+    mensual = SOPORTE_MENSUAL_UNO;
+  }else if(n===2){
+    setupMin = serviciosIds.reduce((a,id)=> a+(servicioPorId(id)?.precioMin||0),0);
+    setupMax = serviciosIds.reduce((a,id)=> a+(servicioPorId(id)?.precioMax||0),0);
+    mensual = SOPORTE_MENSUAL_UNO*2; // sin paquete de 2, se cobra soporte individual por cada uno
+  }else{
+    setupMin=0; setupMax=0; mensual=0;
+  }
+  const comisionSetup = Math.round(((setupMin+setupMax)/2) * (COMISION_VENTA_PCT/100));
+  const comisionMensual = Math.round(mensual * (COMISION_MENSUAL_PCT/100));
+  return {setupMin, setupMax, mensual, comisionSetup, comisionMensual};
+}
+
+/* --------------------------- GENERADOR DE MENSAJES DE CAPTACIÓN (por nicho + falencia) --------------------------- */
+/* No usa una API externa de IA (este archivo no tiene backend propio para exponer una llave de
+   forma segura) — en su lugar arma el mensaje combinando: el dolor típico de su nicho, su falencia
+   real si la registraste, y el servicio del catálogo que mejor la resuelve. Sigue siendo un punto
+   de partida personalizado y editable, no un genérico. */
+function generarEnganches(lead){
+  const nicho = NICHOS.includes(lead.nicho) ? lead.nicho : "Otro";
+  const empresa = lead.empresaNombre || "tu negocio";
+  const nombre = lead.nombre || "";
+  const dolorPropio = lead.falencia && lead.falencia.trim().length>5 ? lead.falencia.trim() : null;
+
+  return SERVICIOS.map(s=>{
+    const dolor = dolorPropio || s.enganches[nicho] || s.enganches.Otro;
+    const mensaje = `Hola ${nombre}${nombre?', ':''}vi que ${empresa} es un negocio de ${nicho.toLowerCase()==='otro'?'este rubro':nicho.toLowerCase()} y muchos como este ${dolor}. ${s.icono} Con ${s.nombre.toLowerCase()} resolvemos justo eso — implementación en días, no meses. ¿Tienes 5 minutos esta semana para mostrarte cómo se vería en ${empresa}?`;
+    return {servicio:s, mensaje};
+  });
+}
+
+
 
 /* ---------------------------- CAPTACIÓN GOOGLE BUSINESS / RESEÑAS ---------------------------- */
 /* Estructura lista para conectar Google Places API más adelante; por ahora se captura manualmente. */
@@ -1341,9 +1440,11 @@ function googleCaptureForm(){
 }
 
 function leadForm(lead){
-  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",presupuesto:"",vendedorId:(currentVendedorId()||DB.vendedores[0]?.id||""),prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
+  const l = lead || {nombre:"",apellido:"",empresaNombre:"",cargo:"",email:"",telefono:"",fuente:FUENTES[0],productoInteres:"",serviciosInteres:[],presupuesto:"",vendedorId:(currentVendedorId()||DB.vendedores[0]?.id||""),prioridad:"media",pais:"España",colaboradores:"",nicho:NICHOS[0],falencia:""};
   const enc = calcularEncaje(l);
   const descartado = lead && l.estado==="descartado";
+  const serviciosSel = l.serviciosInteres || [];
+  const precio = calcularPrecioOportunidad(serviciosSel);
   return `
   <div class="modal-head"><h3>${lead? "Editar prospecto":"Nuevo prospecto"}</h3><button class="close-x" data-close>✕</button></div>
   <div class="modal-body">
@@ -1365,10 +1466,24 @@ function leadForm(lead){
       <div class="field"><label>Nicho de negocio</label><select id="f_nicho">${NICHOS.map(n=>`<option ${n===l.nicho?'selected':''}>${n}</option>`).join("")}</select></div>
       <div class="field"><label>Fuente</label><select id="f_fuente">${FUENTES.map(f=>`<option ${f===l.fuente?'selected':''}>${f}</option>`).join("")}</select></div>
       <div class="field"><label>Vendedor asignado</label><select id="f_vendedor"><option value="">— Sin asignar —</option>${DB.vendedores.map(v=>`<option value="${v.id}" ${v.id===l.vendedorId?'selected':''}>${v.nombre}</option>`).join("")}</select></div>
-      <div class="field"><label>Servicio de interés / plan</label><input id="f_producto" value="${l.productoInteres}" placeholder="Ej: Agente IA WhatsApp — Setup + mensualidad"></div>
       <div class="field"><label>Presupuesto informado ($)</label><input type="number" id="f_presupuesto" value="${l.presupuesto}"></div>
       <div class="field"><label>Prioridad</label><select id="f_prioridad">${["baja","media","alta","critica"].map(p=>`<option ${p===l.prioridad?'selected':''}>${p}</option>`).join("")}</select></div>
-      <div class="field" style="grid-column:1/-1;"><label>Falencia detectada en su servicio actual (qué mejoraría con nuestro agente de IA)</label><textarea id="f_falencia" rows="3" placeholder="Ej: pierde reservas fuera de horario, no responde WhatsApp a tiempo, no automatiza confirmaciones...">${l.falencia||""}</textarea></div>
+      <div class="field" style="grid-column:1/-1;">
+        <label>Servicios de interés</label>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          ${SERVICIOS.map(s=>`
+            <label style="display:flex;align-items:flex-start;gap:8px;font-weight:400;color:var(--text);padding:8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" class="f_servicio" value="${s.id}" style="width:auto;margin-top:2px;" ${serviciosSel.includes(s.id)?'checked':''}>
+              <span><b>${s.icono} ${s.nombre}</b><br><span style="font-size:12px;color:var(--muted);">${s.resumen} — $${s.precioMin}–$${s.precioMax}</span></span>
+            </label>`).join("")}
+        </div>
+      </div>
+      <div class="field" style="grid-column:1/-1;"><label>Notas adicionales sobre el interés</label><input id="f_producto" value="${l.productoInteres}" placeholder="Cualquier detalle extra que no encaje arriba"></div>
+      <div class="field" style="grid-column:1/-1;"><label>Falencia detectada en su servicio actual (qué mejoraría con nuestros servicios)</label><textarea id="f_falencia" rows="3" placeholder="Ej: pierde reservas fuera de horario, no responde WhatsApp a tiempo, no automatiza confirmaciones...">${l.falencia||""}</textarea></div>
+    </div>
+    <div class="card card-pad" id="f_precio_box" style="margin-top:14px;background:#EEF1FB;border-color:#CBD3F0;">
+      <b>Cotización estimada</b>
+      <div id="f_precio_detalle" style="font-size:12.5px;color:var(--muted);margin-top:4px;">${precio.setupMax? `Setup: $${precio.setupMin}–$${precio.setupMax} · Mensual: $${precio.mensual} · Tu comisión estimada: $${precio.comisionSetup} + $${precio.comisionMensual}/mes` : "Selecciona uno o más servicios para ver la cotización."}</div>
     </div>
     <div class="card card-pad" id="f_encaje_box" style="margin-top:14px;background:var(--accent-soft);border-color:#BFE4DD;">
       <b>Encaje con nuestro servicio: <span id="f_encaje_pts">${enc.pts}</span>/100 pts</b>
@@ -1377,6 +1492,7 @@ function leadForm(lead){
   </div>
   <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cancelar</button>
+    ${lead? `<button class="btn" id="btnEnganches" data-id="${l.id}" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>` : ""}
     ${lead? `<button class="btn" id="btnAgendar" data-id="${l.id}" style="border-color:var(--info);color:var(--info);">📅 Agendar reunión</button>` : ""}
     ${lead? (descartado
       ? `<button class="btn" id="btnReactivar" data-id="${l.id}">↩ Reactivar prospecto</button>`
@@ -1386,6 +1502,24 @@ function leadForm(lead){
 }
 
 /* --------------------------- DESCARTAR PROSPECTO --------------------------- */
+/* --------------------------- MENSAJES DE CAPTACIÓN SUGERIDOS --------------------------- */
+function enganchesModal(leadId){
+  const l = DB.leads.find(x=>x.id===leadId);
+  const opciones = generarEnganches(l);
+  return `
+  <div class="modal-head"><h3>💬 Mensajes de captación sugeridos</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Basados en el nicho (${l.nicho||'Otro'}) y la falencia registrada de <b>${l.empresaNombre||l.nombre}</b>. Son un punto de partida — edítalos a tu estilo antes de enviarlos.</p>
+    ${opciones.map((o,i)=>`
+      <div class="card card-pad" style="margin-bottom:10px;">
+        <b>${o.servicio.icono} ${o.servicio.nombre}</b>
+        <textarea id="eng_${i}" rows="4" style="margin-top:8px;">${o.mensaje}</textarea>
+        <button class="btn btn-sm" style="margin-top:8px;" data-copiar="eng_${i}">📋 Copiar mensaje</button>
+      </div>`).join("")}
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cerrar</button></div>`;
+}
+
 function descarteForm(leadId){
   const l = DB.leads.find(x=>x.id===leadId);
   return `
@@ -2331,6 +2465,20 @@ function bindModalEvents(){
     });
   }
 
+  // Mensajes de captación sugeridos (basados en nicho + falencia + catálogo de servicios)
+  const btnEnganches = document.getElementById("btnEnganches");
+  if(btnEnganches) btnEnganches.addEventListener("click", ()=> openModal(enganchesModal(btnEnganches.dataset.id)));
+  document.querySelectorAll("[data-copiar]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const ta = document.getElementById(btn.dataset.copiar);
+      if(!ta) return;
+      ta.select();
+      navigator.clipboard?.writeText(ta.value).then(()=> toast("Mensaje copiado")).catch(()=>{
+        document.execCommand("copy"); toast("Mensaje copiado");
+      });
+    });
+  });
+
   // Agendar reunión (booking) — abre formulario con hora del cliente
   const btnAgendar = document.getElementById("btnAgendar");
   if(btnAgendar) btnAgendar.addEventListener("click", ()=> openModal(agendarForm(btnAgendar.dataset.id)));
@@ -2552,14 +2700,24 @@ function bindModalEvents(){
       if(ptsEl) ptsEl.textContent = enc.pts;
       if(razEl) razEl.textContent = enc.razones.join(" · ") || "Completa los campos para calcular el encaje.";
     };
+    const updatePrecio = ()=>{
+      const seleccionados = [...document.querySelectorAll(".f_servicio:checked")].map(el=>el.value);
+      const precio = calcularPrecioOportunidad(seleccionados);
+      const det = document.getElementById("f_precio_detalle");
+      if(det) det.textContent = precio.setupMax
+        ? `Setup: $${precio.setupMin}–$${precio.setupMax} · Mensual: $${precio.mensual} · Tu comisión estimada: $${precio.comisionSetup} + $${precio.comisionMensual}/mes`
+        : "Selecciona uno o más servicios para ver la cotización.";
+    };
     ["f_pais","f_nicho","f_presupuesto","f_falencia","f_colaboradores"].forEach(id=>{
       const el = document.getElementById(id);
       if(el) el.addEventListener("input", updateLive);
     });
+    document.querySelectorAll(".f_servicio").forEach(chk=> chk.addEventListener("change", updatePrecio));
     saveLeadBtn.addEventListener("click", async ()=>{
       const nombre = document.getElementById("f_nombre").value.trim();
       if(!nombre){ toast("El nombre es obligatorio", true); return; }
       const id = saveLeadBtn.dataset.id;
+      const serviciosInteres = [...document.querySelectorAll(".f_servicio:checked")].map(el=>el.value);
       const data = {
         nombre, apellido: document.getElementById("f_apellido").value,
         empresaNombre: document.getElementById("f_empresa").value,
@@ -2573,6 +2731,7 @@ function bindModalEvents(){
         fuente: document.getElementById("f_fuente").value,
         vendedorId: document.getElementById("f_vendedor").value,
         productoInteres: document.getElementById("f_producto").value,
+        serviciosInteres,
         presupuesto: Number(document.getElementById("f_presupuesto").value)||0,
         prioridad: document.getElementById("f_prioridad").value,
       };
