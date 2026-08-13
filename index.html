@@ -44,6 +44,7 @@ a{color:inherit;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
 .brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
 .brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
+.auth-mobile-brand .name{color:var(--text);}
 .brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;white-space:nowrap;}
 .navgroup{margin-bottom:4px;}
 .navgroup-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:#666C87;padding:14px 12px 6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;white-space:nowrap;}
@@ -182,12 +183,41 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
 
 /* modal */
-.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--ink),var(--ink2));display:flex;align-items:center;justify-content:center;z-index:5000;padding:16px;}
-.auth-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
-.auth-tabs{display:flex;gap:4px;background:var(--paper);border-radius:10px;padding:4px;margin-bottom:18px;}
-.auth-tab{flex:1;border:none;background:transparent;padding:8px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;}
+.auth-screen{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:5000;padding:0;}
+.auth-shell{display:grid;grid-template-columns:1.05fr 1fr;width:100%;height:100%;max-width:1100px;max-height:680px;margin:auto;box-shadow:0 30px 90px rgba(0,0,0,.45);border-radius:20px;overflow:hidden;}
+.auth-visual{background:radial-gradient(circle at 20% 20%,#1B2540,var(--ink) 60%);color:#fff;padding:52px 44px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
+.auth-visual::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;opacity:.5;}
+.auth-visual-mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:24px;margin-bottom:24px;position:relative;box-shadow:0 8px 24px rgba(37,99,235,.4);}
+.auth-visual h2{font-family:'Sora';font-size:32px;margin:0 0 8px;position:relative;}
+.auth-visual-tag{color:#9AA3B8;font-size:14px;margin:0 0 32px;position:relative;}
+.auth-visual-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:16px;position:relative;}
+.auth-visual-list li{font-size:13.5px;color:#C6CBE0;display:flex;align-items:flex-start;gap:10px;line-height:1.5;}
+.auth-visual-list li span{color:var(--accent2);font-size:11px;margin-top:4px;}
+.auth-card{background:#fff;display:flex;align-items:center;justify-content:center;padding:32px;}
+.auth-card-inner{width:100%;max-width:340px;}
+.auth-mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:20px;}
+.auth-title{font-family:'Sora';font-size:23px;margin:0 0 4px;font-weight:700;}
+.auth-subtitle{color:var(--muted);font-size:13px;margin:0 0 22px;}
+.auth-tabs{display:flex;gap:4px;background:var(--paper);border-radius:10px;padding:4px;margin-bottom:20px;}
+.auth-tab{flex:1;border:none;background:transparent;padding:8px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;transition:.15s;}
 .auth-tab.active{background:#fff;color:var(--ink2);box-shadow:0 1px 3px rgba(0,0,0,.1);}
 .auth-error{background:var(--red-soft);color:var(--red);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;}
+.field-modern{margin-bottom:16px;}
+.field-modern label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;}
+.input-icon-wrap{position:relative;display:flex;align-items:center;}
+.input-icon-wrap .input-icon{position:absolute;left:13px;font-size:14px;color:var(--muted);pointer-events:none;}
+.input-icon-wrap input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;background:var(--paper);transition:.15s;}
+.input-icon-wrap input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px var(--accent-soft);}
+.auth-submit{width:100%;justify-content:center;padding:11px;font-size:14px;border-radius:10px;margin-top:4px;}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:11.5px;}
+.auth-divider span{flex:1;height:1px;background:var(--line);}
+@media(max-width:760px){
+  .auth-screen{padding:16px;}
+  .auth-shell{grid-template-columns:1fr;max-width:420px;height:auto;max-height:none;border-radius:16px;}
+  .auth-visual{display:none;}
+  .auth-mobile-brand{display:flex;}
+  .auth-card{padding:28px 24px;}
+}
 .modal-bg{position:fixed;inset:0;background:rgba(18,24,43,.45);display:none;align-items:center;justify-content:center;z-index:3000;padding:16px;}
 .modal-bg.active{display:flex;}
 .modal{background:#fff;border-radius:12px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
@@ -284,42 +314,62 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 
 <!-- ================= PANTALLA DE LOGIN ================= -->
 <div id="authScreen" class="auth-screen">
-  <div class="auth-card">
-    <div class="brand" style="margin-bottom:22px;">
-      <div class="mark">N</div>
-      <div><div class="name">Impulso</div><div class="sub">OMNICORE AI · ACCESO DEL EQUIPO</div></div>
+  <div class="auth-shell">
+    <div class="auth-visual">
+      <div class="auth-visual-mark">I</div>
+      <h2>Impulso</h2>
+      <p class="auth-visual-tag">El CRM de ventas de OmniCore AI</p>
+      <ul class="auth-visual-list">
+        <li><span>◆</span> Prospectos y equipo compartidos en tiempo real</li>
+        <li><span>◆</span> Mapa global con hora local de cada cliente</li>
+        <li><span>◆</span> Mensajes de captación sugeridos por nicho</li>
+      </ul>
     </div>
+    <div class="auth-card">
+      <div class="auth-card-inner">
+        <div class="auth-mobile-brand brand">
+          <div class="mark">I</div>
+          <div><div class="name">Impulso</div><div class="sub">OMNICORE AI</div></div>
+        </div>
+        <h1 class="auth-title">Bienvenido de vuelta</h1>
+        <p class="auth-subtitle">Ingresa con tu correo del equipo para continuar</p>
 
-    <div id="authTabs" class="auth-tabs">
-      <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
-      <button class="auth-tab" data-tab="signup">Crear cuenta</button>
-    </div>
+        <div id="authTabs" class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+          <button class="auth-tab" data-tab="signup">Crear cuenta</button>
+        </div>
 
-    <div id="authError" class="auth-error" style="display:none;"></div>
+        <div id="authError" class="auth-error" style="display:none;"></div>
 
-    <form id="authForm">
-      <div class="field" style="margin-bottom:12px;">
-        <label>Correo</label>
-        <input type="email" id="auth_email" required placeholder="tunombre@omnicoreai.com" autocomplete="email">
+        <form id="authForm">
+          <div class="field-modern">
+            <label>Correo</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">✉</span>
+              <input type="email" id="auth_email" required placeholder="tunombre@omnicoreai.com" autocomplete="email">
+            </div>
+          </div>
+          <div class="field-modern">
+            <label>Contraseña</label>
+            <div class="input-icon-wrap">
+              <span class="input-icon">🔒</span>
+              <input type="password" id="auth_password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+            </div>
+          </div>
+          <div id="authSignupHint" style="display:none;font-size:11.5px;color:var(--muted);margin:-6px 0 14px;">
+            Se creará tu cuenta automáticamente en Supabase. Revisa tu correo si se requiere confirmación.
+          </div>
+          <button type="submit" class="btn btn-primary auth-submit" id="authSubmitBtn">Iniciar sesión</button>
+        </form>
+
+        <div id="passkeyDivider" class="auth-divider"><span></span>o<span></span></div>
+        <button type="button" class="btn auth-submit" id="passkeyLoginBtn">🔑 Iniciar sesión con passkey</button>
+
+        <div id="authConfigWarning" class="auth-error" style="display:none;margin-top:14px;">
+          ⚠ Supabase no está configurado todavía. Un administrador debe completar <span class="mono">SUPABASE_URL</span> y <span class="mono">SUPABASE_ANON_KEY</span> al inicio del archivo. Ver <span class="mono">SUPABASE_SETUP.md</span>.
+          <div style="margin-top:10px;"><a href="#" id="bypassAuthLink" style="color:inherit;text-decoration:underline;">Continuar sin login por ahora →</a></div>
+        </div>
       </div>
-      <div class="field" style="margin-bottom:6px;">
-        <label>Contraseña</label>
-        <input type="password" id="auth_password" required minlength="6" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
-      </div>
-      <div id="authSignupHint" style="display:none;font-size:11.5px;color:var(--muted);margin-bottom:14px;">
-        Se creará tu cuenta automáticamente en Supabase. Revisa tu correo si se requiere confirmación.
-      </div>
-      <button type="submit" class="btn btn-primary" id="authSubmitBtn" style="width:100%;margin-top:10px;justify-content:center;">Iniciar sesión</button>
-    </form>
-
-    <div id="passkeyDivider" style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:11.5px;">
-      <div style="flex:1;height:1px;background:var(--line);"></div>o<div style="flex:1;height:1px;background:var(--line);"></div>
-    </div>
-    <button type="button" class="btn" id="passkeyLoginBtn" style="width:100%;justify-content:center;">🔑 Iniciar sesión con passkey</button>
-
-    <div id="authConfigWarning" class="auth-error" style="display:none;margin-top:14px;">
-      ⚠ Supabase no está configurado todavía. Un administrador debe completar <span class="mono">SUPABASE_URL</span> y <span class="mono">SUPABASE_ANON_KEY</span> al inicio del archivo. Ver <span class="mono">SUPABASE_SETUP.md</span>.
-      <div style="margin-top:10px;"><a href="#" id="bypassAuthLink" style="color:inherit;text-decoration:underline;">Continuar sin login por ahora →</a></div>
     </div>
   </div>
 </div>
