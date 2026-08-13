@@ -264,6 +264,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -1227,6 +1228,91 @@ function viewLeads(){
 /* Formulario para registrar negocios encontrados en Google Maps/reseñas que aún no tienen sitio web.
    Los campos coinciden 1 a 1 con lo que expondría Google Places API, para poder automatizar esta
    captura más adelante sin cambiar el modelo de datos. */
+/* --------------------------- IMPORTAR PROSPECTOS (CSV / Excel) --------------------------- */
+/* Estado temporal del asistente de importación — vive fuera de DB porque es un borrador
+   de trabajo, no datos confirmados; se descarta si se cierra el modal sin terminar. */
+let importState = null;
+
+const CAMPOS_IMPORTABLES = [
+  {key:"nombre", label:"Nombre", requerido:true, sinonimos:["nombre","name","first name","primer nombre","contacto"]},
+  {key:"apellido", label:"Apellido", sinonimos:["apellido","apellidos","last name","surname"]},
+  {key:"empresaNombre", label:"Empresa", sinonimos:["empresa","company","negocio","compania","compañia","compañía","business"]},
+  {key:"cargo", label:"Cargo", sinonimos:["cargo","puesto","position","title","rol"]},
+  {key:"email", label:"Email", sinonimos:["email","correo","e-mail","mail","correo electronico"]},
+  {key:"telefono", label:"Teléfono / WhatsApp", sinonimos:["telefono","teléfono","phone","celular","whatsapp","movil","móvil","numero"]},
+  {key:"pais", label:"País", sinonimos:["pais","país","country"]},
+  {key:"nicho", label:"Nicho de negocio", sinonimos:["nicho","industria","rubro","sector","tipo de negocio"]},
+  {key:"presupuesto", label:"Presupuesto", sinonimos:["presupuesto","budget","monto"]},
+  {key:"fuente", label:"Fuente", sinonimos:["fuente","source","origen"]},
+  {key:"falencia", label:"Falencia / Nota", sinonimos:["falencia","nota","notas","comentario","comentarios","observaciones"]},
+];
+
+function normalizarTexto(s){
+  return (s||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+}
+
+function importarForm(){
+  return `
+  <div class="modal-head"><h3>Importar prospectos</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">Sube un archivo CSV o Excel (.xlsx/.xls) con tus prospectos. En el siguiente paso podrás revisar y ajustar qué columna corresponde a cada campo antes de importar nada.</p>
+    <div class="field">
+      <label>Archivo</label>
+      <input type="file" id="importFile" accept=".csv,.xlsx,.xls">
+    </div>
+    <div id="importFileStatus" style="margin-top:10px;font-size:12.5px;color:var(--muted);"></div>
+  </div>
+  <div class="modal-foot"><button class="btn" data-close>Cancelar</button></div>`;
+}
+
+function importarMappingForm(){
+  const s = importState;
+  return `
+  <div class="modal-head"><h3>Mapear columnas</h3><button class="close-x" data-close>✕</button></div>
+  <div class="modal-body">
+    <p style="color:var(--muted);font-size:12.5px;margin-top:0;">${s.rows.length} fila(s) detectada(s) en <b>${s.nombreArchivo}</b>. Confirma o corrige qué columna de tu archivo corresponde a cada campo — el sistema ya adivinó lo que pudo.</p>
+    <div class="form-grid" id="mappingGrid">
+      ${CAMPOS_IMPORTABLES.map(c=>`
+        <div class="field">
+          <label>${c.label}${c.requerido?' *':''}</label>
+          <select data-map="${c.key}">
+            <option value="">— No importar —</option>
+            ${s.headers.map(h=>`<option value="${h}" ${s.mapeo[c.key]===h?'selected':''}>${h}</option>`).join("")}
+          </select>
+        </div>`).join("")}
+    </div>
+    <div class="section-title">Vista previa (primeras 5 filas)</div>
+    <div class="table-wrap">
+      <table id="previewTable"></table>
+    </div>
+    <div id="importSummary" style="margin-top:10px;font-size:12.5px;color:var(--muted);"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn" data-close>Cancelar</button>
+    <button class="btn btn-primary" id="confirmImportar">Importar ${s.rows.length} prospecto(s)</button>
+  </div>`;
+}
+
+function renderPreviewTable(){
+  const s = importState;
+  const campos = CAMPOS_IMPORTABLES.filter(c=> s.mapeo[c.key]);
+  const tabla = document.getElementById("previewTable");
+  if(!tabla) return;
+  tabla.innerHTML = `
+    <thead><tr>${campos.map(c=>`<th>${c.label}</th>`).join("")}</tr></thead>
+    <tbody>
+      ${s.rows.slice(0,5).map(r=>`<tr>${campos.map(c=>`<td>${r[s.mapeo[c.key]]??''}</td>`).join("")}</tr>`).join("")}
+    </tbody>`;
+  const sinNombre = s.rows.filter(r=> !s.mapeo.nombre || !(r[s.mapeo.nombre]||"").toString().trim()).length;
+  const resumen = document.getElementById("importSummary");
+  if(resumen){
+    resumen.innerHTML = sinNombre
+      ? `⚠ ${sinNombre} fila(s) sin nombre — se omitirán al importar.`
+      : `✓ Todas las filas tienen nombre. Listo para importar.`;
+  }
+}
+
+
 function googleCaptureForm(){
   return `
   <div class="modal-head"><h3>📍 Captar negocio desde Google</h3><button class="close-x" data-close>✕</button></div>
@@ -1960,14 +2046,7 @@ function bindViewEvents(){
     document.getElementById("fPrioridad").addEventListener("change", e=>{ leadFilters.prioridad=e.target.value; viewLeadsUpdate(); });
     document.getElementById("btnNuevoLead").addEventListener("click", ()=> openModal(leadForm()));
     document.getElementById("btnCaptarGoogle").addEventListener("click", ()=> openModal(googleCaptureForm()));
-    document.getElementById("btnImportar").addEventListener("click", ()=> openModal(`
-      <div class="modal-head"><h3>Importar prospectos</h3><button class="close-x" data-close>✕</button></div>
-      <div class="modal-body">
-        <p>Flujo previsto: seleccionar archivo → detectar columnas → mapear campos → validar → detectar duplicados → vista previa → confirmar → importar.</p>
-        <div class="empty"><div class="big">📄</div>Función preparada — integración de importación CSV/Excel pendiente.</div>
-      </div>
-      <div class="modal-foot"><button class="btn" data-close>Entendido</button></div>
-    `));
+    document.getElementById("btnImportar").addEventListener("click", ()=>{ importState = null; openModal(importarForm()); });
     document.querySelectorAll("[data-convert]").forEach(btn=>{
       btn.addEventListener("click", e=>{
         e.stopPropagation();
@@ -2300,6 +2379,104 @@ function bindModalEvents(){
       save();
       registrarActividad("Agendó reunión", `${l.nombre} ${l.apellido} — ${fmtDate(fechaISO)}`);
       toast(`Reunión agendada con ${l.nombre} ${l.apellido} para el ${fmtDate(fechaISO)}`);
+      closeModal(); renderView();
+    });
+  }
+
+  // Importar prospectos (CSV / Excel)
+  const importFile = document.getElementById("importFile");
+  if(importFile){
+    importFile.addEventListener("change", (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const status = document.getElementById("importFileStatus");
+      status.textContent = "Leyendo archivo...";
+      const reader = new FileReader();
+      reader.onload = (ev)=>{
+        try{
+          const wb = XLSX.read(ev.target.result, {type:"array"});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, {defval:""});
+          if(!rows.length){ status.textContent = "El archivo no tiene filas de datos."; return; }
+          const headers = Object.keys(rows[0]);
+          // Auto-detectar qué columna corresponde a cada campo, por nombre parecido
+          const mapeo = {};
+          CAMPOS_IMPORTABLES.forEach(c=>{
+            const encontrada = headers.find(h=> c.sinonimos.includes(normalizarTexto(h)));
+            if(encontrada) mapeo[c.key] = encontrada;
+          });
+          importState = {nombreArchivo: file.name, headers, rows, mapeo};
+          openModal(importarMappingForm());
+          setTimeout(renderPreviewTable, 30);
+        }catch(err){
+          status.textContent = "No se pudo leer el archivo. Verifica que sea un CSV o Excel válido.";
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  document.querySelectorAll("[data-map]").forEach(sel=>{
+    sel.addEventListener("change", ()=>{
+      importState.mapeo[sel.dataset.map] = sel.value;
+      renderPreviewTable();
+    });
+  });
+
+  const confirmImportar = document.getElementById("confirmImportar");
+  if(confirmImportar){
+    confirmImportar.addEventListener("click", async ()=>{
+      const s = importState;
+      if(!s.mapeo.nombre){ toast("Debes mapear al menos la columna de Nombre", true); return; }
+      const vendedorId = currentVendedorId()||DB.vendedores[0]?.id||"";
+      const candidatos = s.rows
+        .map(r=>{
+          const nombreCompleto = (r[s.mapeo.nombre]||"").toString().trim();
+          if(!nombreCompleto) return null;
+          const lead = {
+            nombre: nombreCompleto,
+            apellido: s.mapeo.apellido ? (r[s.mapeo.apellido]||"").toString() : "",
+            empresaNombre: s.mapeo.empresaNombre ? (r[s.mapeo.empresaNombre]||"").toString() : "",
+            cargo: s.mapeo.cargo ? (r[s.mapeo.cargo]||"").toString() : "",
+            email: s.mapeo.email ? (r[s.mapeo.email]||"").toString() : "",
+            telefono: s.mapeo.telefono ? (r[s.mapeo.telefono]||"").toString() : "",
+            pais: s.mapeo.pais && paisInfo((r[s.mapeo.pais]||"").toString()) ? (r[s.mapeo.pais]||"").toString() : "",
+            nicho: s.mapeo.nicho && NICHOS.includes((r[s.mapeo.nicho]||"").toString()) ? (r[s.mapeo.nicho]||"").toString() : "Otro",
+            presupuesto: s.mapeo.presupuesto ? (Number(r[s.mapeo.presupuesto])||0) : 0,
+            fuente: s.mapeo.fuente ? (r[s.mapeo.fuente]||"").toString() : "Importado",
+            falencia: s.mapeo.falencia ? (r[s.mapeo.falencia]||"").toString() : "",
+            colaboradores: 0, productoInteres: "", prioridad: "media",
+            vendedorId, estado: "nuevo", puntuacion: 0, fechaIngreso: todayISO(),
+          };
+          lead.puntosEncaje = calcularEncaje(lead).pts;
+          return lead;
+        })
+        .filter(Boolean);
+      if(!candidatos.length){ toast("No hay filas válidas para importar", true); return; }
+
+      confirmImportar.disabled = true;
+      confirmImportar.textContent = "Importando...";
+      let insertados = [];
+      let sincronizado = true;
+      if(supabaseConfigured){
+        try{
+          const {data, error} = await sb.from("leads").insert(candidatos.map(leadAFila)).select();
+          if(error) throw error;
+          insertados = data.map(leadDesdeFila);
+        }catch(err){
+          sincronizado = false;
+          insertados = candidatos.map(l=>({...l, id:uid()}));
+        }
+      }else{
+        insertados = candidatos.map(l=>({...l, id:uid()}));
+      }
+      DB.leads.unshift(...insertados);
+      save();
+      registrarActividad("Importó prospectos", `${insertados.length} desde ${s.nombreArchivo}`);
+      toast(sincronizado
+        ? `${insertados.length} prospecto(s) importado(s) correctamente`
+        : `${insertados.length} prospecto(s) guardado(s) solo en este navegador — no se pudo sincronizar`, !sincronizado);
+      importState = null;
       closeModal(); renderView();
     });
   }
