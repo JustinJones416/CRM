@@ -3,32 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nexo CRM — Prototipo Comercial</title>
+<title>Impulso — CRM de OmniCore AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{
-  --ink:#0F172A;
-  --ink2:#1E293B;
-  --paper:#F8FAFC;
+  --ink:#0B0F17;
+  --ink2:#161B26;
+  --paper:#F7F8FA;
   --card:#FFFFFF;
-  --line:#E2E8F0;
-  --text:#1E293B;
-  --muted:#64748B;
-  --accent:#4F46E5;
-  --accent2:#6366F1;
-  --accent-soft:#EEF2FF;
-  --info:#0EA5E9;
-  --info-soft:#F0F9FF;
+  --line:#E5E7EB;
+  --text:#111827;
+  --muted:#6B7280;
+  --accent:#2563EB;
+  --accent2:#3B82F6;
+  --accent-soft:#EFF4FF;
+  --info:#0891B2;
+  --info-soft:#ECFEFF;
   --amber:#D97706;
   --amber-soft:#FFFBEB;
   --red:#DC2626;
   --red-soft:#FEF2F2;
-  --radius:12px;
-  --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.05);
-  --shadow-hover:0 4px 10px rgba(15,23,42,.05), 0 14px 32px rgba(15,23,42,.08);
+  --radius:10px;
+  --shadow:0 1px 2px rgba(11,15,23,.04), 0 8px 20px rgba(11,15,23,.05);
+  --shadow-hover:0 4px 10px rgba(11,15,23,.05), 0 14px 28px rgba(11,15,23,.08);
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--text);font-size:14px;}
@@ -136,6 +136,14 @@ input[type=text],input[type=search],input[type=number],input[type=date],input[ty
 }
 textarea{width:100%;resize:vertical;}
 .search-box{position:relative;}
+.add-dropdown-wrap{position:relative;}
+.add-dropdown-menu{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-hover);min-width:250px;z-index:400;display:none;overflow:hidden;}
+.add-dropdown-menu.active{display:block;}
+.add-dropdown-menu button{width:100%;display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border:none;background:none;text-align:left;border-bottom:1px solid var(--paper);font-size:13px;color:var(--text);}
+.add-dropdown-menu button:last-child{border-bottom:none;}
+.add-dropdown-menu button:hover{background:var(--paper);}
+.add-ico{font-size:16px;line-height:1.3;}
+.add-sub{font-size:11px;color:var(--muted);font-weight:400;}
 .search-box input{padding-left:30px;width:220px;}
 .search-box::before{content:"⌕";position:absolute;left:10px;top:7px;color:var(--muted);}
 
@@ -279,7 +287,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
   <div class="auth-card">
     <div class="brand" style="margin-bottom:22px;">
       <div class="mark">N</div>
-      <div><div class="name">Nexo CRM</div><div class="sub">OMNICORE AI · ACCESO DEL EQUIPO</div></div>
+      <div><div class="name">Impulso</div><div class="sub">OMNICORE AI · ACCESO DEL EQUIPO</div></div>
     </div>
 
     <div id="authTabs" class="auth-tabs">
@@ -321,7 +329,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="mark">N</div>
-      <div><div class="name">Nexo CRM</div><div class="sub">MODO PROTOTIPO · DATOS LOCALES</div></div>
+      <div><div class="name">Impulso</div><div class="sub">OMNICORE AI · CRM DE VENTAS</div></div>
       <button class="collapse-btn" id="collapseBtn" title="Contraer/expandir menú" style="margin-left:auto;">«</button>
     </div>
     <nav id="navroot"></nav>
@@ -1367,10 +1375,13 @@ function viewLeads(){
         ${["baja","media","alta","critica"].map(s=>`<option value="${s}" ${leadFilters.prioridad===s?'selected':''}>${s}</option>`).join("")}
       </select>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn" id="btnImportar">Importar</button>
-      <button class="btn" id="btnCaptarGoogle">📍 Captar desde Google</button>
-      <button class="btn btn-primary" id="btnNuevoLead">+ Nuevo prospecto</button>
+    <div class="add-dropdown-wrap">
+      <button class="btn btn-primary" id="btnAgregarProspecto">+ Agregar prospecto ▾</button>
+      <div class="add-dropdown-menu" id="addDropdownMenu">
+        <button data-add="manual"><span class="add-ico">✏️</span><span><b>Manual</b><br><span class="add-sub">Cargar los datos a mano</span></span></button>
+        <button data-add="google"><span class="add-ico">📍</span><span><b>Desde Google</b><br><span class="add-sub">Negocio sin sitio web / reseñas</span></span></button>
+        <button data-add="importar"><span class="add-ico">📄</span><span><b>Importar archivo</b><br><span class="add-sub">CSV o Excel, varios a la vez</span></span></button>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -1569,7 +1580,7 @@ function leadForm(lead){
   </div>
   <div class="modal-foot" style="flex-wrap:wrap;">
     <button class="btn" data-close>Cancelar</button>
-    ${lead? `<button class="btn" id="btnEnganches" data-id="${l.id}" data-tipo="lead" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>` : ""}
+    ${lead? `<button class="btn" id="btnEnganches" data-id="${l.id}" data-tipo="lead" style="border-color:var(--info);color:var(--info);">💬 Mensajes de captación</button>` : ""}
     ${lead? `<button class="btn" id="btnAgendar" data-id="${l.id}" style="border-color:var(--info);color:var(--info);">📅 Agendar reunión</button>` : ""}
     ${lead? (descartado
       ? `<button class="btn" id="btnReactivar" data-id="${l.id}">↩ Reactivar prospecto</button>`
@@ -1999,7 +2010,7 @@ function clientePerfil(c){
   </div>
   <div class="modal-foot">
     <button class="btn" data-close>Cerrar</button>
-    <button class="btn" id="btnEnganches" data-id="${c.id}" data-tipo="cliente" style="border-color:#8B5CF6;color:#8B5CF6;">💬 Mensajes de captación</button>
+    <button class="btn" id="btnEnganches" data-id="${c.id}" data-tipo="cliente" style="border-color:var(--info);color:var(--info);">💬 Mensajes de captación</button>
     <button class="btn btn-primary" id="btnEditarCliente" data-id="${c.id}">Editar cliente</button>
   </div>`;
 }
@@ -2293,9 +2304,24 @@ function bindViewEvents(){
     leadSearch.addEventListener("input", e=>{ leadFilters.q = e.target.value; viewLeadsUpdate(); });
     document.getElementById("fEstado").addEventListener("change", e=>{ leadFilters.estado=e.target.value; viewLeadsUpdate(); });
     document.getElementById("fPrioridad").addEventListener("change", e=>{ leadFilters.prioridad=e.target.value; viewLeadsUpdate(); });
-    document.getElementById("btnNuevoLead").addEventListener("click", ()=> openModal(leadForm()));
-    document.getElementById("btnCaptarGoogle").addEventListener("click", ()=> openModal(googleCaptureForm()));
-    document.getElementById("btnImportar").addEventListener("click", ()=>{ importState = null; openModal(importarForm()); });
+    // Único punto de entrada para agregar prospectos, con menú desplegable (manual / Google / importar)
+    const btnAgregarProspecto = document.getElementById("btnAgregarProspecto");
+    const addDropdownMenu = document.getElementById("addDropdownMenu");
+    if(btnAgregarProspecto && addDropdownMenu){
+      btnAgregarProspecto.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        addDropdownMenu.classList.toggle("active");
+      });
+      addDropdownMenu.querySelectorAll("[data-add]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          addDropdownMenu.classList.remove("active");
+          if(btn.dataset.add==="manual") openModal(leadForm());
+          else if(btn.dataset.add==="google") openModal(googleCaptureForm());
+          else if(btn.dataset.add==="importar"){ importState = null; openModal(importarForm()); }
+        });
+      });
+      document.addEventListener("click", ()=> addDropdownMenu.classList.remove("active"));
+    }
     document.querySelectorAll("[data-convert]").forEach(btn=>{
       btn.addEventListener("click", e=>{
         e.stopPropagation();
