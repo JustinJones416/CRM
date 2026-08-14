@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Impulso — CRM de OmniCore AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
@@ -32,7 +32,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:'Inter',sans-serif;background:var(--paper);color:var(--text);font-size:14px;}
-h1,h2,h3,.display{font-family:'Sora',sans-serif;}
+h1,h2,h3,.display{font-family:'Fraunces',serif;font-weight:600;}
 .mono{font-family:'IBM Plex Mono',monospace;}
 button{font-family:inherit;cursor:pointer;}
 a{color:inherit;}
@@ -42,8 +42,8 @@ a{color:inherit;}
 .shell.collapsed{grid-template-columns:64px 1fr;}
 .sidebar{background:linear-gradient(180deg,var(--ink),#0D1220);color:#C6CBE0;padding:18px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:padding .18s;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 20px;}
-.brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;color:#fff;font-size:14px;}
-.brand .name{font-family:'Sora';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
+.brand .mark{width:28px;height:28px;min-width:28px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Fraunces';font-weight:800;color:#fff;font-size:14px;}
+.brand .name{font-family:'Fraunces';font-weight:700;color:#fff;font-size:15px;white-space:nowrap;}
 .auth-mobile-brand .name{color:var(--text);}
 .brand .sub{font-size:10px;color:#8388A3;letter-spacing:.04em;white-space:nowrap;}
 .navgroup{margin-bottom:4px;}
@@ -68,7 +68,7 @@ a{color:inherit;}
 .btn-label-mobile{display:none;}
 .topbar h1{font-size:16px;margin:0;font-weight:700;white-space:nowrap;}
 .pill{font-size:11.5px;background:var(--info-soft);color:var(--info);padding:5px 10px;border-radius:20px;font-weight:600;}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:'Sora';}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--info);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;font-family:'Fraunces';}
 .menu-btn{display:none;background:none;border:none;color:var(--text);font-size:20px;}
 
 /* ---------- BÚSQUEDA GLOBAL ---------- */
@@ -101,6 +101,8 @@ body.dense .card-pad{padding:10px 12px;}
 .section-title{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:20px 0 9px;}
 .subtabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:0;}
 .subtab{background:none;border:none;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px;transition:.15s;}
+body.dense .subtabs{margin-bottom:10px;}
+body.dense .subtab{padding:7px 12px;font-size:12.5px;}
 .subtab:hover{color:var(--text);}
 .subtab.active{color:var(--accent);border-bottom-color:var(--accent);}
 .subtab-count{background:var(--paper);color:var(--muted);font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;}
@@ -127,7 +129,7 @@ body.dense .section-title{margin:14px 0 6px;font-size:11.5px;}
 .kpi.clickable:hover::before{opacity:1;}
 body.dense .kpi{padding:9px 11px;}
 .kpi .label{font-size:12px;color:var(--muted);font-weight:500;}
-.kpi .value{font-family:'Sora';font-size:26px;font-weight:700;margin:4px 0 6px;}
+.kpi .value{font-family:'Fraunces';font-size:26px;font-weight:700;margin:4px 0 6px;}
 body.dense .kpi .value{font-size:19px;margin:2px 0 4px;}
 .kpi .insight{font-size:12px;padding:5px 8px;border-radius:6px;display:inline-block;font-weight:600;}
 .kpi .insight.warn{background:var(--amber-soft);color:var(--amber);}
@@ -205,15 +207,16 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted);}
 .empty .big{font-size:28px;margin-bottom:8px;}
-.soon-badge{font-size:9.5px;background:#2A3358;color:#9AA1C4;padding:2px 6px;border-radius:20px;}
+body.dense .empty{padding:22px 16px;}
+body.dense .empty .big{font-size:22px;margin-bottom:4px;}
 
 /* modal */
 .auth-screen{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:5000;padding:0;}
 .auth-shell{display:grid;grid-template-columns:1.05fr 1fr;width:100%;height:100%;max-width:1100px;max-height:680px;margin:auto;box-shadow:0 30px 90px rgba(0,0,0,.45);border-radius:20px;overflow:hidden;}
 .auth-visual{background:radial-gradient(circle at 20% 20%,#1B2540,var(--ink) 60%);color:#fff;padding:52px 44px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;}
 .auth-visual::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;opacity:.5;}
-.auth-visual-mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:800;font-size:24px;margin-bottom:24px;position:relative;box-shadow:0 8px 24px rgba(37,99,235,.4);}
-.auth-visual h2{font-family:'Sora';font-size:32px;margin:0 0 8px;position:relative;}
+.auth-visual-mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-family:'Fraunces';font-weight:800;font-size:24px;margin-bottom:24px;position:relative;box-shadow:0 8px 24px rgba(37,99,235,.4);}
+.auth-visual h2{font-family:'Fraunces';font-size:32px;margin:0 0 8px;position:relative;}
 .auth-visual-tag{color:#9AA3B8;font-size:14px;margin:0 0 32px;position:relative;}
 .auth-visual-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:16px;position:relative;}
 .auth-visual-list li{font-size:13.5px;color:#C6CBE0;display:flex;align-items:flex-start;gap:10px;line-height:1.5;}
@@ -221,7 +224,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .auth-card{background:#fff;display:flex;align-items:center;justify-content:center;padding:32px;}
 .auth-card-inner{width:100%;max-width:340px;}
 .auth-mobile-brand{display:none;align-items:center;gap:10px;margin-bottom:20px;}
-.auth-title{font-family:'Sora';font-size:23px;margin:0 0 4px;font-weight:700;}
+.auth-title{font-family:'Fraunces';font-size:23px;margin:0 0 4px;font-weight:700;}
 .auth-subtitle{color:var(--muted);font-size:13px;margin:0 0 22px;}
 .auth-tabs{display:flex;gap:4px;background:var(--paper);border-radius:10px;padding:4px;margin-bottom:20px;}
 .auth-tab{flex:1;border:none;background:transparent;padding:8px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;transition:.15s;}
@@ -231,8 +234,8 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .field-modern label{display:block;font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;}
 .input-icon-wrap{position:relative;display:flex;align-items:center;}
 .input-icon-wrap .input-icon{position:absolute;left:13px;font-size:14px;color:var(--muted);pointer-events:none;}
-.input-icon-wrap input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;background:var(--paper);transition:.15s;}
-.input-icon-wrap input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px var(--accent-soft);}
+#authForm .input-icon-wrap input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;background:var(--paper);transition:.15s;}
+#authForm .input-icon-wrap input:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 4px var(--accent-soft);}
 .auth-submit{width:100%;justify-content:center;padding:11px;font-size:14px;border-radius:10px;margin-top:4px;}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:11.5px;}
 .auth-divider span{flex:1;height:1px;background:var(--line);}
@@ -247,7 +250,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .modal-bg.active{display:flex;}
 .modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 70px rgba(15,15,23,.3);}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line);}
-.modal-head h3{margin:0;font-size:16.5px;font-family:'Sora';font-weight:700;}
+.modal-head h3{margin:0;font-size:16.5px;font-family:'Fraunces';font-weight:700;}
 .modal-body{padding:20px 22px;}
 .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--paper);border-radius:0 0 16px 16px;}
 .close-x{background:none;border:none;font-size:18px;color:var(--muted);border-radius:8px;width:30px;height:30px;transition:.15s;}
@@ -257,12 +260,14 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
 .field input,.field select,.field textarea{width:100%;}
 
 /* toast */
-.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:3100;display:flex;flex-direction:column;gap:8px;}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:3100;display:flex;flex-direction:column;gap:8px;max-width:340px;}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:40;display:none;}
 .overlay.active{display:block;}
-.toast{background:var(--ink2);color:#fff;padding:11px 16px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;animation:slidein .2s ease;min-width:220px;}
+.toast{background:var(--ink2);color:#fff;padding:12px 16px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(11,15,23,.3);display:flex;align-items:flex-start;gap:10px;animation:slidein .22s cubic-bezier(.2,.9,.3,1.2);line-height:1.4;}
+.toast::before{content:"✓";flex-shrink:0;width:18px;height:18px;background:rgba(255,255,255,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px;}
 .toast.err{background:var(--red);}
-@keyframes slidein{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.toast.err::before{content:"!";}
+@keyframes slidein{from{opacity:0;transform:translateX(24px) scale(.96)}to{opacity:1;transform:none}}
 
 /* kanban */
 .kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;}
@@ -428,7 +433,7 @@ tr.rowlink:hover{background:#FAFBFD;cursor:pointer;}
         <span class="pill" id="userEmailPill">—</span>
         <button class="btn btn-sm" id="addPasskeyBtn" title="Agregar un passkey para iniciar sesión sin contraseña">🔑<span class="btn-label"> Agregar passkey</span></button>
         <button class="btn btn-sm" id="logoutBtn" title="Cerrar sesión"><span class="btn-label">Cerrar sesión</span><span class="btn-label-mobile">⏻</span></button>
-        <div class="avatar">JR</div>
+        <div class="avatar" id="userAvatar">—</div>
       </div>
     </div>
     <div class="content" id="content"></div>
@@ -1220,7 +1225,9 @@ function toast(msg, isErr){
   const wrap = document.getElementById("toastWrap");
   const t = document.createElement("div");
   t.className = "toast" + (isErr?" err":"");
-  t.textContent = (isErr?"⚠ ":"✓ ") + msg;
+  const texto = document.createElement("span");
+  texto.textContent = msg;
+  t.appendChild(texto);
   wrap.appendChild(t);
   setTimeout(()=>{ t.style.opacity="0"; t.style.transition=".3s"; setTimeout(()=>t.remove(),300); }, 2600);
 }
@@ -1401,7 +1408,7 @@ function viewDashboard(){
         <div class="clickable" data-goto="pipeline" style="flex:1;min-width:120px;text-align:center;position:relative;">
           <div style="background:${i<2?'var(--info-soft)': i<4?'var(--amber-soft)':'var(--accent-soft)'};border-radius:8px;padding:12px 8px;">
             <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:4px;">${ETAPA_LABEL[e.etapa]}</div>
-            <div style="font-family:'Sora';font-weight:700;font-size:18px;">${e.cantidad}</div>
+            <div style="font-family:'Fraunces';font-weight:700;font-size:18px;">${e.cantidad}</div>
             <div style="font-size:11px;font-family:'IBM Plex Mono';color:var(--muted);">${fmtMoney(e.valor)}</div>
             <div style="font-size:10.5px;color:var(--muted);">${Math.round(e.cantidad/totalEnFunnel*100)}%</div>
           </div>
@@ -3687,7 +3694,25 @@ async function showApp(userEmail){
     ]);
   }
   if(userEmail) await ensureVendedorForUser(userEmail); // vincula/crea el integrante del Equipo correspondiente a esta cuenta
+  actualizarAvatar(userEmail);
   startApp();
+}
+
+/* El avatar circular de la barra superior mostraba "JR" fijo, sin relación con quién
+   inició sesión — ahora calcula las iniciales reales de la persona (de su nombre en
+   Equipo si ya existe, o de su correo como respaldo). */
+function actualizarAvatar(userEmail){
+  const el = document.getElementById("userAvatar");
+  if(!el) return;
+  let iniciales = "?";
+  const v = DB.vendedores.find(x=>x.id===currentVendedorIdCache);
+  if(v && v.nombre){
+    const partes = v.nombre.trim().split(/\s+/);
+    iniciales = partes.length>1 ? (partes[0][0]+partes[1][0]) : partes[0].slice(0,2);
+  }else if(userEmail){
+    iniciales = userEmail.slice(0,2);
+  }
+  el.textContent = iniciales.toUpperCase();
 }
 
 function showAuthScreen(){
