@@ -858,12 +858,21 @@ function currentVendedorId(){ return currentVendedorIdCache; }
 async function cargarTablaDesdeSupabase(tabla, campoOrden, ascendente, mapper, etiqueta){
   if(!supabaseConfigured) return [];
   try{
-    const {data, error} = await sb.from(tabla).select("*").order(campoOrden, {ascending: ascendente});
+    let query = sb.from(tabla).select("*");
+    if(campoOrden) query = query.order(campoOrden, {ascending: ascendente});
+    let {data, error} = await query;
+    if(error && /column .* does not exist/i.test(error.message||"")){
+      // La columna usada para ordenar no existe en esta tabla (esquema desalineado) —
+      // reintenta sin ordenar en vez de bloquear la sincronización por completo.
+      console.warn(`"${tabla}" no tiene la columna "${campoOrden}" — cargando sin ordenar.`);
+      const sinOrden = await sb.from(tabla).select("*");
+      data = sinOrden.data; error = sinOrden.error;
+    }
     if(error) throw error;
     return (data||[]).map(mapper);
   }catch(err){
-    console.warn(`No se pudo cargar ${etiqueta} desde Supabase (¿falta correr supabase_migration.sql?):`, err.message);
-    toast(`No se pudo sincronizar ${etiqueta} con Supabase — revisa SUPABASE_SETUP.md`, true);
+    console.warn(`No se pudo cargar ${etiqueta} desde Supabase (¿falta correr supabase_migration.sql?): [${err.code||'?'}] ${err.message}`);
+    toast(`No se pudo sincronizar ${etiqueta} con Supabase: ${err.message||'error desconocido'}`, true);
     return null; // null = falló de verdad; distinto de [] = se sincronizó pero está vacío
   }
 }
